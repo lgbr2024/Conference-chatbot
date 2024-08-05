@@ -1,4 +1,5 @@
 streamlit
-langchain
-langchain_openai
-langchain_pinecone
+   langchain
+   langchain_openai
+   pinecone-client
+   openai
