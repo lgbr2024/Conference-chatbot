@@ -69,7 +69,7 @@ chain = (
 # 채팅 인터페이스 설정
 if "messages" not in st.session_state.keys():  # Initialize the chat message history
     st.session_state.messages = [
-        {"role": "assistant", "content": "GTC에서 공개된 내용에 대해 질문해보세요!"}
+        {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
     ]
 
 if prompt_message := st.chat_input("Your question"): 
