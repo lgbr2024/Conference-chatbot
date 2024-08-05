@@ -2,37 +2,41 @@ import os
 from operator import itemgetter
 from typing import List
 import streamlit as st
-from langchain_pinecone import PineconeVectorStore
+from langchain.vectorstores import Pinecone
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.document_loaders import TextLoader
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import (
     RunnableLambda,
     RunnableParallel,
     RunnablePassthrough,
 )
+import pinecone
 
-
+# API 키 설정
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
-
-st.header("Chat with the ICT Conference 202~2024 💬 📚")
+# Streamlit UI 설정
+st.header("Chat with the GTC 2024 💬 📚")
 option = st.selectbox("GPT 모델을 선택해주세요.",
                      ("gpt-4o", "gpt-40-mini")
                      )
 llm = ChatOpenAI(model=option)
 
+# Pinecone 설정
+pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="your-environment")
 index_name = "gtc2024"
-vectorstore = PineconeVectorStore(index_name=index_name, embedding= OpenAIEmbeddings(model = "text-embedding-3-large"))
+embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+vectorstore = Pinecone.from_existing_index(index_name, embeddings)
 retriever = vectorstore.as_retriever(
-    search_type = 'mmr',
-    search_kwargs = {"k":5, "fetch_k":10, "lambda_mult":0.75}
-    ) 
+    search_type='mmr',
+    search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
+)
+
+# 프롬프트 템플릿 설정
 template = """
 You are an Korean assistant for question-answering tasks. 
 Use the following pieces of retrieved context to answer the question. 
@@ -47,13 +51,12 @@ Answer:
 prompt = ChatPromptTemplate.from_template(template)
 
 def format_docs(docs: List[Document]) -> str:
-    """Convert Documents to a single string.:"""
+    """Convert Documents to a single string."""
     formatted = [
         f"Article Title: {doc.metadata['source']}\nArticle Snippet: {doc.page_content}"
         for doc in docs
     ]
     return "\n\n" + "\n\n".join(formatted)
-
 
 format = itemgetter("docs") | RunnableLambda(format_docs)
 
@@ -66,8 +69,7 @@ chain = (
     .pick(["answer", "docs"])
 )
 
-st.header("Chat with the GTC 2024 💬 📚")
-
+# 채팅 인터페이스 설정
 if "messages" not in st.session_state.keys(): # Initialize the chat message history
     st.session_state.messages = [
         {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
@@ -89,8 +91,8 @@ if st.session_state.messages[-1]["role"] != "assistant":
             st.markdown(answer)
 
             with st.expander("참고 문서 확인"):
-                st.markdown(source_documents[0].metadata['source'], help = source_documents[0].page_content)
-                st.markdown(source_documents[1].metadata['source'], help = source_documents[1].page_content)
-                st.markdown(source_documents[2].metadata['source'], help = source_documents[2].page_content)
+                st.markdown(source_documents[0].metadata['source'], help=source_documents[0].page_content)
+                st.markdown(source_documents[1].metadata['source'], help=source_documents[1].page_content)
+                st.markdown(source_documents[2].metadata['source'], help=source_documents[2].page_content)
             message = {"role": "assistant", "content": response['answer']}
-            st.session_state.messages.append(message) 
+            st.session_state.messages.append(message)
