@@ -1,5 +1,3 @@
-pip install --upgrade langchain
-
 import os
 from operator import itemgetter
 from typing import List
