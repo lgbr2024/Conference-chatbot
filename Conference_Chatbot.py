@@ -17,7 +17,7 @@ os.environ["OPENAI_API_KEY"] = st.secrets["openai"]["api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone"]["api_key"]
 
 # Streamlit UI 설정
-st.header("Chat with the GTC 2024 💬 📚")
+st.header("Chat with the Conference 2022-2024 💬 📚")
 option = st.selectbox("GPT 모델을 선택해주세요.", ("gpt-4", "gpt-3.5-turbo"))
 llm = ChatOpenAI(model=option)
 
