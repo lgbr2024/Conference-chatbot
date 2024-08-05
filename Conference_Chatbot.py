@@ -3,31 +3,26 @@ from operator import itemgetter
 from typing import List
 import streamlit as st
 from langchain.vectorstores import Pinecone
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import (
-    RunnableLambda,
-    RunnableParallel,
-    RunnablePassthrough,
-)
+from langchain.schema import Document
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import RetrievalQA
 import pinecone
 
 # API 키 설정
-os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
-os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
+os.environ["OPENAI_API_KEY"] = st.secrets["openai"]["api_key"]
+os.environ["PINECONE_API_KEY"] = st.secrets["pinecone"]["api_key"]
 
 # Streamlit UI 설정
 st.header("Chat with the GTC 2024 💬 📚")
-option = st.selectbox("GPT 모델을 선택해주세요.",
-                     ("gpt-4o", "gpt-40-mini")
-                     )
+option = st.selectbox("GPT 모델을 선택해주세요.", ("gpt-4", "gpt-3.5-turbo"))
 llm = ChatOpenAI(model=option)
 
-# Pinecone 설정
-pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="your-environment")
+# Pinecone 초기화
+pinecone.init(api_key=st.secrets["pinecone"]["api_key"], environment=st.secrets["pinecone"]["environment"])
+
+# Pinecone 인덱스 설정
 index_name = "gtc2024"
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 vectorstore = Pinecone.from_existing_index(index_name, embeddings)
@@ -38,10 +33,10 @@ retriever = vectorstore.as_retriever(
 
 # 프롬프트 템플릿 설정
 template = """
-You are an Korean assistant for question-answering tasks. 
+You are a Korean assistant for question-answering tasks. 
 Use the following pieces of retrieved context to answer the question. 
 If you don't know the answer, just say that you don't know. 
-You should answer in KOREAN and please give rich sentences to make answer much better.
+You should answer in KOREAN and please give rich sentences to make the answer much better.
 
 Question: {question} 
 Context: {context} 
@@ -70,7 +65,7 @@ chain = (
 )
 
 # 채팅 인터페이스 설정
-if "messages" not in st.session_state.keys(): # Initialize the chat message history
+if "messages" not in st.session_state.keys():  # Initialize the chat message history
     st.session_state.messages = [
         {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
     ]
@@ -91,8 +86,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
             st.markdown(answer)
 
             with st.expander("참고 문서 확인"):
-                st.markdown(source_documents[0].metadata['source'], help=source_documents[0].page_content)
-                st.markdown(source_documents[1].metadata['source'], help=source_documents[1].page_content)
-                st.markdown(source_documents[2].metadata['source'], help=source_documents[2].page_content)
+                for i, doc in enumerate(source_documents[:3], 1):
+                    st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
             message = {"role": "assistant", "content": response['answer']}
             st.session_state.messages.append(message)
