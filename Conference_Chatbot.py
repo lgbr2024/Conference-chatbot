@@ -4,11 +4,12 @@ from typing import List
 import streamlit as st
 from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
 import pinecone
 
 # API 키 설정
@@ -54,7 +55,7 @@ def format_docs(docs: List[Document]) -> str:
     ]
     return "\n\n" + "\n\n".join(formatted)
 
-format = itemgetter("docs") | RunnableLambda(format_docs)
+format = itemgetter("docs") | (lambda docs: format_docs(docs))
 
 answer = prompt | llm | StrOutputParser()
 
@@ -68,7 +69,7 @@ chain = (
 # 채팅 인터페이스 설정
 if "messages" not in st.session_state.keys():  # Initialize the chat message history
     st.session_state.messages = [
-        {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
+        {"role": "assistant", "content": "GTC에서 공개된 내용에 대해 질문해보세요!"}
     ]
 
 if prompt_message := st.chat_input("Your question"): 
