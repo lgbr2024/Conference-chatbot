@@ -8,6 +8,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
+from langchain.schema.output_parser import StrOutputParser
 import pinecone
 
 # API 키 설정
