@@ -1,0 +1,6 @@
+streamlit
+   langchain
+   langchain_openai
+   pinecone-client
+   openai
+   
