@@ -62,7 +62,7 @@ answer = prompt | llm | StrOutputParser()
 chain = (
     RunnableMap({
         "question": RunnablePassthrough(),
-        "docs": retriever
+        "docs": retriever.get_relevant_documents  # 변경된 부분
     }) | RunnableMap({
         "context": format_docs_lambda,
         "answer": answer
@@ -90,11 +90,11 @@ if st.session_state.messages[-1]["role"] != "assistant":
                     st.write(f"Debug: Received prompt_message: {prompt_message}")
                     
                     # Retrieving documents
-                    docs = retriever.retrieve(prompt_message)
+                    docs = retriever.get_relevant_documents(prompt_message)
                     st.write(f"Debug: Retrieved docs: {docs}")
                     
                     # Formatting documents
-                    formatted_docs = format_docs_lambda.invoke({"docs": docs})
+                    formatted_docs = format_docs(docs)
                     st.write(f"Debug: Formatted docs: {formatted_docs}")
                     
                     # Generating answer
