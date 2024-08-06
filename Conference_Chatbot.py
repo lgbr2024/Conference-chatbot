@@ -75,10 +75,10 @@ if "messages" not in st.session_state.keys():  # Initialize the chat message his
         {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
     ]
 
-if prompt_message := st.chat_input("Your question"): 
+if prompt_message := st.chat_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt_message})
 
-for message in st.session_state.messages: 
+for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
@@ -87,7 +87,9 @@ if st.session_state.messages[-1]["role"] != "assistant":
         with st.spinner("Thinking..."):
             try:
                 if isinstance(prompt_message, str):
+                    st.write(f"Debug: Received prompt_message: {prompt_message}")
                     response = chain.invoke({"question": prompt_message})
+                    st.write(f"Debug: Received response: {response}")
                     answer = response['answer']
                     source_documents = response['docs']
                     st.markdown(answer)
@@ -101,3 +103,4 @@ if st.session_state.messages[-1]["role"] != "assistant":
                     st.error("Invalid input: prompt_message must be a string.")
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+                st.write(f"Debug: Error details: {str(e)}")
