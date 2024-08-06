@@ -24,7 +24,7 @@ pinecone.init(api_key=st.secrets["pinecone"]["api_key"], environment=st.secrets[
 
 # Pinecone 인덱스 설정
 index_name = "gtc2024"
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 vectorstore = Pinecone.from_existing_index(index_name, embeddings)
 retriever = vectorstore.as_retriever(
     search_type='mmr',
@@ -85,13 +85,16 @@ for message in st.session_state.messages:
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = chain.invoke({"question": prompt_message})
-            answer = response['answer']
-            source_documents = response['docs']
-            st.markdown(answer)
+            try:
+                response = chain.invoke({"question": prompt_message})
+                answer = response['answer']
+                source_documents = response['docs']
+                st.markdown(answer)
 
-            with st.expander("참고 문서 확인"):
-                for i, doc in enumerate(source_documents[:3], 1):
-                    st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
-            message = {"role": "assistant", "content": response['answer']}
-            st.session_state.messages.append(message)
+                with st.expander("참고 문서 확인"):
+                    for i, doc in enumerate(source_documents[:3], 1):
+                        st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
+                message = {"role": "assistant", "content": response['answer']}
+                st.session_state.messages.append(message)
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
