@@ -88,16 +88,30 @@ if st.session_state.messages[-1]["role"] != "assistant":
             try:
                 if isinstance(prompt_message, str):
                     st.write(f"Debug: Received prompt_message: {prompt_message}")
-                    response = chain.invoke({"question": prompt_message})
+                    
+                    # Retrieving documents
+                    docs = retriever.retrieve(prompt_message)
+                    st.write(f"Debug: Retrieved docs: {docs}")
+                    
+                    # Formatting documents
+                    formatted_docs = format_docs_lambda.invoke({"docs": docs})
+                    st.write(f"Debug: Formatted docs: {formatted_docs}")
+                    
+                    # Generating answer
+                    response = answer.invoke({
+                        "question": prompt_message,
+                        "context": formatted_docs
+                    })
                     st.write(f"Debug: Received response: {response}")
-                    answer = response['answer']
-                    source_documents = response['docs']
-                    st.markdown(answer)
+                    
+                    answer_text = response['answer']
+                    source_documents = docs
+                    st.markdown(answer_text)
 
                     with st.expander("참고 문서 확인"):
                         for i, doc in enumerate(source_documents[:3], 1):
                             st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
-                    message = {"role": "assistant", "content": response['answer']}
+                    message = {"role": "assistant", "content": answer_text}
                     st.session_state.messages.append(message)
                 else:
                     st.error("Invalid input: prompt_message must be a string.")
