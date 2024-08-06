@@ -7,7 +7,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough, RunnableParallel, RunnableLambda
+from langchain.schema.runnable import RunnablePassthrough, RunnableParallel, RunnableLambda, RunnableMap
 import pinecone
 
 # API 키 설정
@@ -54,16 +54,19 @@ def format_docs(docs: List[Document]) -> str:
     return "\n\n" + "\n\n".join(formatted)
 
 # RunnableLambda for formatting docs
-format_docs_lambda = RunnableLambda(lambda docs: format_docs(docs))
+format_docs_lambda = RunnableLambda(lambda x: format_docs(x["docs"]))
 
 # Answer generation chain
 answer = prompt | llm | StrOutputParser()
 
 chain = (
-    RunnableParallel(question=RunnablePassthrough(), docs=retriever)
-    .assign(context=format_docs_lambda)
-    .assign(answer=answer)
-    .pick(["answer", "docs"])
+    RunnableMap({
+        "question": RunnablePassthrough(),
+        "docs": retriever
+    }) | RunnableMap({
+        "context": format_docs_lambda,
+        "answer": answer
+    })
 )
 
 # 채팅 인터페이스 설정
