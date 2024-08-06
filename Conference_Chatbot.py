@@ -86,15 +86,18 @@ if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                response = chain.invoke({"question": prompt_message})
-                answer = response['answer']
-                source_documents = response['docs']
-                st.markdown(answer)
+                if isinstance(prompt_message, str):
+                    response = chain.invoke({"question": prompt_message})
+                    answer = response['answer']
+                    source_documents = response['docs']
+                    st.markdown(answer)
 
-                with st.expander("참고 문서 확인"):
-                    for i, doc in enumerate(source_documents[:3], 1):
-                        st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
-                message = {"role": "assistant", "content": response['answer']}
-                st.session_state.messages.append(message)
+                    with st.expander("참고 문서 확인"):
+                        for i, doc in enumerate(source_documents[:3], 1):
+                            st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
+                    message = {"role": "assistant", "content": response['answer']}
+                    st.session_state.messages.append(message)
+                else:
+                    st.error("Invalid input: prompt_message must be a string.")
             except Exception as e:
                 st.error(f"An error occurred: {e}")
