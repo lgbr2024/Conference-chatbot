@@ -1,5 +1,4 @@
 import os
-from operator import itemgetter
 from typing import List
 import streamlit as st
 from langchain.vectorstores import Pinecone
@@ -7,9 +6,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.prompts import ChatPromptTemplate
-from langchain.chains import RetrievalQA
 from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
+from langchain.schema.runnable import RunnablePassthrough, RunnableParallel, RunnableLambda
 import pinecone
 
 # API 키 설정
@@ -55,13 +53,15 @@ def format_docs(docs: List[Document]) -> str:
     ]
     return "\n\n" + "\n\n".join(formatted)
 
-format = itemgetter("docs") | (lambda docs: format_docs(docs))
+# RunnableLambda for formatting docs
+format_docs_lambda = RunnableLambda(lambda docs: format_docs(docs))
 
+# Answer generation chain
 answer = prompt | llm | StrOutputParser()
 
 chain = (
     RunnableParallel(question=RunnablePassthrough(), docs=retriever)
-    .assign(context=format)
+    .assign(context=format_docs_lambda)
     .assign(answer=answer)
     .pick(["answer", "docs"])
 )
@@ -82,7 +82,7 @@ for message in st.session_state.messages:
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            response = chain.invoke(prompt_message)
+            response = chain.invoke({"question": prompt_message})
             answer = response['answer']
             source_documents = response['docs']
             st.markdown(answer)
