@@ -19,9 +19,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 load_dotenv()
 
 # 환경 변수에서 API 키 가져오기
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY")
-
+os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
+os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
 ## 셀 2: ModifiedPineconeVectorStore 클래스 정의
 class ModifiedPineconeVectorStore(PineconeVectorStore):
