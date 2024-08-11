@@ -16,11 +16,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
-
-# Set API keys
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY")
-
 # Define ModifiedPineconeVectorStore class
 class ModifiedPineconeVectorStore(PineconeVectorStore):
     def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
@@ -87,15 +82,36 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
             for i in mmr_selected
         ]
 
+
 # Define maximal_marginal_relevance function
 def maximal_marginal_relevance(
     query_embedding: np.ndarray,
-    embedding_list: List[List[float]],
+    embedding_list: List[np.ndarray],
     k: int = 4,
     lambda_mult: float = 0.5
 ) -> List[int]:
-    # ... (paste the entire function definition here)
+    similarity_scores = cosine_similarity([query_embedding], embedding_list)[0]
 
+    selected_indices = []
+    candidate_indices = list(range(len(embedding_list)))
+
+    for _ in range(k):
+        if not candidate_indices:
+            break
+        
+        mmr_scores = [
+            lambda_mult * similarity_scores[i] - (1 - lambda_mult) * max(
+                [cosine_similarity([embedding_list[i]], [embedding_list[s]])[0][0] for s in selected_indices] or [0]
+            )
+            for i in candidate_indices
+        ]
+
+        max_index = candidate_indices[np.argmax(mmr_scores)]
+        selected_indices.append(max_index)
+        candidate_indices.remove(max_index)
+
+    return selected_indices
+    
 # Streamlit app
 def main():
     st.title("Conference Q&A System")
