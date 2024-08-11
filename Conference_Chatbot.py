@@ -1,35 +1,162 @@
+!pip install python-dotenv langchain-pinecone langchain-openai
+
+# 셀 1: 필요한 라이브러리 임포트 및 환경 설정
 import os
-from typing import List
-import streamlit as st
-from langchain.vectorstores import Pinecone
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.schema import Document
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough, RunnableParallel, RunnableLambda, RunnableMap
-import pinecone
+from dotenv import load_dotenv
+from operator import itemgetter
+from typing import List, Tuple, Dict, Any
+from pinecone import Pinecone
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
+from langchain_pinecone import PineconeVectorStore
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
-# API 키 설정
-os.environ["OPENAI_API_KEY"] = st.secrets["openai"]["api_key"]
-os.environ["PINECONE_API_KEY"] = st.secrets["pinecone"]["api_key"]
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
-# Streamlit UI 설정
-st.header("Chat with the Conference 2022-2024 💬 📚")
-option = st.selectbox("GPT 모델을 선택해주세요.", ("gpt-4", "gpt-3.5-turbo"))
+# 환경 변수에서 API 키 가져오기
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY")
+
+
+## 셀 2: ModifiedPineconeVectorStore 클래스 정의
+class ModifiedPineconeVectorStore(PineconeVectorStore):
+    def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
+        super().__init__(index, embedding, text_key, namespace)
+        self.index = index
+        self._embedding = embedding
+        self._text_key = text_key
+        self._namespace = namespace
+
+    def similarity_search_with_score_by_vector(
+        self, embedding: List[float], k: int = 4, filter: Dict[str, Any] = None, namespace: str = None
+    ) -> List[Tuple[Document, float]]:
+        namespace = namespace or self._namespace
+        results = self.index.query(
+            vector=embedding,
+            top_k=k,
+            include_metadata=True,
+            include_values=True,
+            filter=filter,
+            namespace=namespace,
+        )
+        return [
+            (
+                Document(
+                    page_content=result["metadata"].get(self._text_key, ""),
+                    metadata={k: v for k, v in result["metadata"].items() if k != self._text_key}
+                ),
+                result["score"],
+            )
+            for result in results["matches"]
+        ]
+
+    def max_marginal_relevance_search_by_vector(
+        self, embedding: List[float], k: int = 4, fetch_k: int = 20,
+        lambda_mult: float = 0.5, filter: Dict[str, Any] = None, namespace: str = None
+    ) -> List[Document]:
+        namespace = namespace or self._namespace
+        results = self.index.query(
+            vector=embedding,
+            top_k=fetch_k,
+            include_metadata=True,
+            include_values=True,
+            filter=filter,
+            namespace=namespace,
+        )
+        if not results['matches']:
+            return []
+        
+        embeddings = [match['values'] for match in results['matches']]
+        mmr_selected = maximal_marginal_relevance(
+            np.array(embedding, dtype=np.float32),
+            embeddings,
+            k=min(k, len(results['matches'])),
+            lambda_mult=lambda_mult
+        )
+        
+        return [
+            Document(
+                page_content=results['matches'][i]['metadata'].get(self._text_key, ""),
+                metadata={
+                    'source': results['matches'][i]['metadata'].get('source', '').split('data\\')[-1] if 'source' in results['matches'][i]['metadata'] else 'Unknown'
+                }
+            )
+            for i in mmr_selected
+        ]
+
+# 셀 3: maximal_marginal_relevance 함수 정의
+def maximal_marginal_relevance(
+    query_embedding: np.ndarray,
+    embedding_list: List[List[float]],
+    k: int = 4,
+    lambda_mult: float = 0.5
+) -> List[int]:
+    if not embedding_list:
+        return []
+    
+    # 이미 숫자 리스트이므로 변환 불필요
+    embedding_list = np.array(embedding_list, dtype=np.float32)
+    
+    if embedding_list.size == 0:
+        return []
+    
+    similarity_to_query = cosine_similarity(query_embedding.reshape(1, -1), embedding_list)[0]
+    
+    most_similar = int(np.argmax(similarity_to_query))
+    idxs = [most_similar]
+    selected = np.array([embedding_list[most_similar]])
+    
+    while len(idxs) < min(k, len(embedding_list)):
+        best_score = -np.inf
+        idx_to_add = -1
+        for i, emb in enumerate(embedding_list):
+            if i in idxs:
+                continue
+            
+            similarity_to_query = cosine_similarity(query_embedding.reshape(1, -1), emb.reshape(1, -1))[0][0]
+            similarities_to_selected = cosine_similarity(emb.reshape(1, -1), selected)[0]
+            mmr_score = lambda_mult * similarity_to_query - (1 - lambda_mult) * np.max(similarities_to_selected)
+            
+            if mmr_score > best_score:
+                best_score = mmr_score
+                idx_to_add = i
+        
+        if idx_to_add == -1:
+            break
+        
+        idxs.append(idx_to_add)
+        selected = np.vstack((selected, embedding_list[idx_to_add]))
+    
+    return idxs
+
+# 셀 4: Pinecone 초기화 및 벡터 스토어 설정
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index_name = "conference"
+index = pc.Index(index_name)
+
+# GPT 모델 선택
+option = input("GPT 모델을 선택해주세요 (gpt-4o 또는 gpt-4o-mini): ")
 llm = ChatOpenAI(model=option)
 
-# Pinecone 초기화
-pinecone.init(api_key=st.secrets["pinecone"]["api_key"], environment=st.secrets["pinecone"]["environment"])
+# Pinecone 벡터 스토어 설정
+vectorstore = ModifiedPineconeVectorStore(
+    index=index,
+    embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
+    text_key="source"
+)
 
-# Pinecone 인덱스 설정
-index_name = "gtc2024"
-embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
-vectorstore = Pinecone.from_existing_index(index_name, embeddings)
+# retriever 설정
 retriever = vectorstore.as_retriever(
     search_type='mmr',
     search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
 )
+
+# 셀 6: 프롬프트 템플릿, 체인 설정 및 ask_question 함수 정의
 
 # 프롬프트 템플릿 설정
 template = """
@@ -37,84 +164,49 @@ You are a Korean assistant for question-answering tasks.
 Use the following pieces of retrieved context to answer the question. 
 If you don't know the answer, just say that you don't know. 
 You should answer in KOREAN and please give rich sentences to make the answer much better.
-
 Question: {question} 
 Context: {context} 
 Answer:
 """
-
 prompt = ChatPromptTemplate.from_template(template)
 
 def format_docs(docs: List[Document]) -> str:
-    """Convert Documents to a single string."""
-    formatted = [
-        f"Article Title: {doc.metadata['source']}\nArticle Snippet: {doc.page_content}"
-        for doc in docs
-    ]
+    formatted = []
+    for doc in docs:
+        source = doc.metadata.get('source', 'Unknown source')
+        content = doc.page_content if doc.page_content else "No content available"
+        formatted.append(f"Source: {source}\nContent Snippet: {content[:200]}...")
     return "\n\n" + "\n\n".join(formatted)
 
-# RunnableLambda for formatting docs
-format_docs_lambda = RunnableLambda(lambda x: format_docs(x["docs"]))
-
-# Answer generation chain
+format = itemgetter("docs") | RunnableLambda(format_docs)
 answer = prompt | llm | StrOutputParser()
 
 chain = (
-    RunnableMap({
-        "question": RunnablePassthrough(),
-        "docs": retriever.get_relevant_documents  # 변경된 부분
-    }) | RunnableMap({
-        "context": format_docs_lambda,
-        "answer": answer
-    })
+    RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+    .assign(context=format)
+    .assign(answer=answer)
+    .pick(["answer", "docs"])
 )
 
-# 채팅 인터페이스 설정
-if "messages" not in st.session_state.keys():  # Initialize the chat message history
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
-    ]
+def ask_question(question):
+    response = chain.invoke(question)
+    answer = response['answer']
+    source_documents = response['docs'][:10]  # 최대 10개까지만 가져옵니다
+    
+    print("답변:", answer)
+    print("\n참고 문서:")
+    for i, doc in enumerate(source_documents, 1):
+        print(f"{i}. 출처: {doc.metadata.get('source', 'Unknown')}")
+        print(f"   내용: {doc.page_content[:100]}...")  # 내용의 일부만 출력
+    
+    return answer, source_documents
 
-if prompt_message := st.chat_input("Your question"):
-    st.session_state.messages.append({"role": "user", "content": prompt_message})
+# 메인 루프
+print("conference에 대해 질문해보세요. 종료하려면 'quit'을 입력하세요.")
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
-
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                if isinstance(prompt_message, str):
-                    st.write(f"Debug: Received prompt_message: {prompt_message}")
-                    
-                    # Retrieving documents
-                    docs = retriever.get_relevant_documents(prompt_message)
-                    st.write(f"Debug: Retrieved docs: {docs}")
-                    
-                    # Formatting documents
-                    formatted_docs = format_docs(docs)
-                    st.write(f"Debug: Formatted docs: {formatted_docs}")
-                    
-                    # Generating answer
-                    response = answer.invoke({
-                        "question": prompt_message,
-                        "context": formatted_docs
-                    })
-                    st.write(f"Debug: Received response: {response}")
-                    
-                    answer_text = response['answer']
-                    source_documents = docs
-                    st.markdown(answer_text)
-
-                    with st.expander("참고 문서 확인"):
-                        for i, doc in enumerate(source_documents[:3], 1):
-                            st.markdown(f"{i}. {doc.metadata['source']}", help=doc.page_content)
-                    message = {"role": "assistant", "content": answer_text}
-                    st.session_state.messages.append(message)
-                else:
-                    st.error("Invalid input: prompt_message must be a string.")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-                st.write(f"Debug: Error details: {str(e)}")
+while True:
+    question = input("\n질문을 입력하세요: ")
+    if question.lower() == 'quit':
+        print("프로그램을 종료합니다.")
+        break
+    ask_question(question)
