@@ -11,6 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
 from langchain_pinecone import PineconeVectorStore
 import numpy as np
+import streamlit as st
 from sklearn.metrics.pairwise import cosine_similarity
 
 # 환경 변수에서 API 키 가져오기
