@@ -1,5 +1,7 @@
-streamlit==1.24.0
-langchain==0.0.344
-openai==1.6.1
-pinecone-client==2.2.4
-tiktoken
+
+numpy
+pandas
+streamlit
+pinecone-client
+python-dotenv
+scikit-learn
