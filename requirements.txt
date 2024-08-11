@@ -5,3 +5,4 @@ streamlit
 pinecone-client
 python-dotenv
 scikit-learn
+langchain-openai
