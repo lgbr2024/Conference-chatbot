@@ -27,7 +27,7 @@ option = st.selectbox("GPT 모델을 선택해주세요.",
                      )
 llm = ChatOpenAI(model=option)
 
-index_name = "gtc2024"
+index_name = "conference"
 vectorstore = PineconeVectorStore(index_name=index_name, embedding= OpenAIEmbeddings(model = "text-embedding-3-large"))
 retriever = vectorstore.as_retriever(
     search_type = 'mmr',
@@ -66,11 +66,11 @@ chain = (
     .pick(["answer", "docs"])
 )
 
-st.header("Chat with the GTC 2024 💬 📚")
+st.header("Chat with the conference 💬 📚")
 
 if "messages" not in st.session_state.keys(): # Initialize the chat message history
     st.session_state.messages = [
-        {"role": "assistant", "content": "GTC에서 공개된 내용에 대해 질문해보세요!"}
+        {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
     ]
 
 if prompt_message := st.chat_input("Your question"): 
