@@ -1,5 +1,3 @@
-!pip install python-dotenv langchain-pinecone langchain-openai
-
 # 셀 1: 필요한 라이브러리 임포트 및 환경 설정
 import os
 from dotenv import load_dotenv
