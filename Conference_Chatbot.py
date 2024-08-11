@@ -1,96 +1,173 @@
-import os
-from operator import itemgetter
-from typing import List
 import streamlit as st
-from langchain_pinecone import PineconeVectorStore
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
+import os
+from dotenv import load_dotenv
+from operator import itemgetter
+from typing import List, Tuple, Dict, Any
+from pinecone import Pinecone
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.document_loaders import TextLoader
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import (
-    RunnableLambda,
-    RunnableParallel,
-    RunnablePassthrough,
-)
-
+from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
+from langchain_pinecone import PineconeVectorStore
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
 
-st.header("Chat with the conferernce 2024 💬 📚")
-option = st.selectbox("GPT 모델을 선택해주세요.",
-                     ("gpt-4o", "gpt-4o-mini")
-                     )
-llm = ChatOpenAI(model=option)
+# Set API keys
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["PINECONE_API_KEY"] = os.getenv("PINECONE_API_KEY")
 
-index_name = "conference"
-vectorstore = PineconeVectorStore(index_name=index_name, embedding= OpenAIEmbeddings(model = "text-embedding-3-large"))
-retriever = vectorstore.as_retriever(
-    search_type = 'mmr',
-    search_kwargs = {"k":5, "fetch_k":10, "lambda_mult":0.75}
-    ) 
-template = """
-You are an Korean assistant for question-answering tasks. 
-Use the following pieces of retrieved context to answer the question. 
-If you don't know the answer, just say that you don't know. 
-You should answer in KOREAN and please give rich sentences to make answer much better.
+# Define ModifiedPineconeVectorStore class
+class ModifiedPineconeVectorStore(PineconeVectorStore):
+    def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
+        super().__init__(index, embedding, text_key, namespace)
+        self.index = index
+        self._embedding = embedding
+        self._text_key = text_key
+        self._namespace = namespace
 
-Question: {question} 
-Context: {context} 
-Answer:
-"""
+    def similarity_search_with_score_by_vector(
+        self, embedding: List[float], k: int = 4, filter: Dict[str, Any] = None, namespace: str = None
+    ) -> List[Tuple[Document, float]]:
+        namespace = namespace or self._namespace
+        results = self.index.query(
+            vector=embedding,
+            top_k=k,
+            include_metadata=True,
+            include_values=True,
+            filter=filter,
+            namespace=namespace,
+        )
+        return [
+            (
+                Document(
+                    page_content=result["metadata"].get(self._text_key, ""),
+                    metadata={k: v for k, v in result["metadata"].items() if k != self._text_key}
+                ),
+                result["score"],
+            )
+            for result in results["matches"]
+        ]
 
-prompt = ChatPromptTemplate.from_template(template)
+    def max_marginal_relevance_search_by_vector(
+        self, embedding: List[float], k: int = 4, fetch_k: int = 20,
+        lambda_mult: float = 0.5, filter: Dict[str, Any] = None, namespace: str = None
+    ) -> List[Document]:
+        namespace = namespace or self._namespace
+        results = self.index.query(
+            vector=embedding,
+            top_k=fetch_k,
+            include_metadata=True,
+            include_values=True,
+            filter=filter,
+            namespace=namespace,
+        )
+        if not results['matches']:
+            return []
+        
+        embeddings = [match['values'] for match in results['matches']]
+        mmr_selected = maximal_marginal_relevance(
+            np.array(embedding, dtype=np.float32),
+            embeddings,
+            k=min(k, len(results['matches'])),
+            lambda_mult=lambda_mult
+        )
+        
+        return [
+            Document(
+                page_content=results['matches'][i]['metadata'].get(self._text_key, ""),
+                metadata={
+                    'source': results['matches'][i]['metadata'].get('source', '').split('data\\')[-1] if 'source' in results['matches'][i]['metadata'] else 'Unknown'
+                }
+            )
+            for i in mmr_selected
+        ]
 
-def format_docs(docs: List[Document]) -> str:
-    """Convert Documents to a single string.:"""
-    formatted = [
-        f"Article Title: {doc.metadata['source']}\nArticle Snippet: {doc.page_content}"
-        for doc in docs
-    ]
-    return "\n\n" + "\n\n".join(formatted)
+# Define maximal_marginal_relevance function
+def maximal_marginal_relevance(
+    query_embedding: np.ndarray,
+    embedding_list: List[List[float]],
+    k: int = 4,
+    lambda_mult: float = 0.5
+) -> List[int]:
+    # ... (paste the entire function definition here)
 
+# Streamlit app
+def main():
+    st.title("Conference Q&A System")
 
-format = itemgetter("docs") | RunnableLambda(format_docs)
+    # Initialize Pinecone
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index_name = "conference"
+    index = pc.Index(index_name)
 
-answer = prompt | llm | StrOutputParser()
+    # Select GPT model
+    option = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"))
+    llm = ChatOpenAI(model=option)
 
-chain = (
-    RunnableParallel(question=RunnablePassthrough(), docs=retriever)
-    .assign(context=format)
-    .assign(answer=answer)
-    .pick(["answer", "docs"])
-)
+    # Set up Pinecone vector store
+    vectorstore = ModifiedPineconeVectorStore(
+        index=index,
+        embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
+        text_key="source"
+    )
 
-st.header("Chat with the conference 💬 📚")
+    # Set up retriever
+    retriever = vectorstore.as_retriever(
+        search_type='mmr',
+        search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
+    )
 
-if "messages" not in st.session_state.keys(): # Initialize the chat message history
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Conference에서 공개된 내용에 대해 질문해보세요!"}
-    ]
+    # Set up prompt template and chain
+    template = """
+    You are a Korean assistant for question-answering tasks. 
+    Use the following pieces of retrieved context to answer the question. 
+    If you don't know the answer, just say that you don't know. 
+    You should answer in KOREAN and please give rich sentences to make the answer much better.
+    Question: {question} 
+    Context: {context} 
+    Answer:
+    """
+    prompt = ChatPromptTemplate.from_template(template)
 
-if prompt_message := st.chat_input("Your question"): 
-    st.session_state.messages.append({"role": "user", "content": prompt_message})
+    def format_docs(docs: List[Document]) -> str:
+        formatted = []
+        for doc in docs:
+            source = doc.metadata.get('source', 'Unknown source')
+            content = doc.page_content if doc.page_content else "No content available"
+            formatted.append(f"Source: {source}\nContent Snippet: {content[:200]}...")
+        return "\n\n" + "\n\n".join(formatted)
 
-for message in st.session_state.messages: 
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+    format = itemgetter("docs") | RunnableLambda(format_docs)
+    answer = prompt | llm | StrOutputParser()
 
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            response = chain.invoke(prompt_message)
+    chain = (
+        RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+        .assign(context=format)
+        .assign(answer=answer)
+        .pick(["answer", "docs"])
+    )
+
+    # User input
+    question = st.text_input("Enter your question about the conference:")
+
+    if st.button("Ask"):
+        if question:
+            response = chain.invoke(question)
             answer = response['answer']
-            source_documents = response['docs']
-            st.markdown(answer)
+            source_documents = response['docs'][:10]  # Get up to 10 documents
 
-            with st.expander("참고 문서 확인"):
-                st.markdown(source_documents[0].metadata['source'], help = source_documents[0].page_content)
-                st.markdown(source_documents[1].metadata['source'], help = source_documents[1].page_content)
-                st.markdown(source_documents[2].metadata['source'], help = source_documents[2].page_content)
-            message = {"role": "assistant", "content": response['answer']}
-            st.session_state.messages.append(message) 
+            st.write("Answer:", answer)
+            st.write("\nReference Documents:")
+            for i, doc in enumerate(source_documents, 1):
+                st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
+                st.write(f"   Content: {doc.page_content[:100]}...")  # Display part of the content
+        else:
+            st.warning("Please enter a question.")
+
+if __name__ == "__main__":
+    main()
