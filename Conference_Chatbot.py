@@ -16,7 +16,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
-# Define ModifiedPineconeVectorStore class
 class ModifiedPineconeVectorStore(PineconeVectorStore):
     def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
         super().__init__(index, embedding, text_key, namespace)
@@ -82,8 +81,6 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
             for i in mmr_selected
         ]
 
-
-# Define maximal_marginal_relevance function
 def maximal_marginal_relevance(
     query_embedding: np.ndarray,
     embedding_list: List[np.ndarray],
@@ -111,10 +108,13 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
 
     return selected_indices
-    
-# Streamlit app
+
 def main():
     st.title("Conference Q&A System")
+
+    # Initialize session state for chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -122,8 +122,11 @@ def main():
     index = pc.Index(index_name)
 
     # Select GPT model
-    option = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"))
-    llm = ChatOpenAI(model=option)
+    if "gpt_model" not in st.session_state:
+        st.session_state.gpt_model = "gpt-4o"
+    
+    st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
+    llm = ChatOpenAI(model=st.session_state.gpt_model)
 
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
@@ -154,8 +157,7 @@ def main():
         formatted = []
         for doc in docs:
             source = doc.metadata.get('source', 'Unknown source')
-            content = doc.page_content if doc.page_content else "No content available"
-            formatted.append(f"Source: {source}\nContent Snippet: {content[:200]}...")
+            formatted.append(f"Source: {source}")
         return "\n\n" + "\n\n".join(formatted)
 
     format = itemgetter("docs") | RunnableLambda(format_docs)
@@ -168,22 +170,29 @@ def main():
         .pick(["answer", "docs"])
     )
 
-    # User input
-    question = st.text_input("Enter your question about the conference:")
+    # Display chat history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-    if st.button("Ask"):
-        if question:
+    # User input
+    if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
+        st.session_state.messages.append({"role": "user", "content": question})
+        with st.chat_message("user"):
+            st.markdown(question)
+
+        with st.chat_message("assistant"):
             response = chain.invoke(question)
             answer = response['answer']
-            source_documents = response['docs'][:10]  # Get up to 10 documents
+            source_documents = response['docs'][:5]  # Get up to 5 documents
 
-            st.write("Answer:", answer)
-            st.write("\nReference Documents:")
-            for i, doc in enumerate(source_documents, 1):
-                st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
-                st.write(f"   Content: {doc.page_content[:100]}...")  # Display part of the content
-        else:
-            st.warning("Please enter a question.")
+            st.markdown(answer)
+            
+            with st.expander("참조 문서"):
+                for i, doc in enumerate(source_documents, 1):
+                    st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
+
+        st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if __name__ == "__main__":
     main()
