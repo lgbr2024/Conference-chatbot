@@ -191,7 +191,13 @@ def main():
             with st.expander("참조 문서"):
                 for i, doc in enumerate(source_documents, 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
+    
+    # Add Plex.tv link
+            st.markdown("---")
+            st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
 
+        
+        
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if __name__ == "__main__":
