@@ -1,9 +1,8 @@
 import os
 import streamlit as st
 from pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings
-from langchain.chat_models import ChatOpenAI
-from langchain_community.vectorstores import ModifiedPineconeVectorStore
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import Pinecone as LangchainPinecone
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
@@ -31,10 +30,10 @@ def main():
     llm = ChatOpenAI(model=st.session_state.gpt_model)
     
     # Set up Pinecone vector store
-    vectorstore = ModifiedPineconeVectorStore(
-        index=index,
-        embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
-        text_key="source"
+    vectorstore = LangchainPinecone(
+        index,
+        OpenAIEmbeddings(model="text-embedding-ada-002"),
+        "source"
     )
     
     # Set up retriever
@@ -126,25 +125,4 @@ def main():
     
     # User input
     if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
-        st.session_state.messages.append({"role": "user", "content": question})
-        with st.chat_message("user"):
-            st.markdown(question)
-        
-        with st.chat_message("assistant"):
-            response = chain.invoke(question)
-            answer = response['answer']
-            source_documents = response['docs'][:5]  # Get up to 5 documents
-            st.markdown(answer)
-            
-            with st.expander("참조 문서"):
-                for i, doc in enumerate(source_documents, 1):
-                    st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
-    
-        # Add Plex.tv link
-        st.markdown("---")
-        st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
-        
-        st.session_state.messages.append({"role": "assistant", "content": answer})
-
-if __name__ == "__main__":
-    main()
+        st.session_state.messages.append({"role": "user", "content
