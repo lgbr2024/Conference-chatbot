@@ -1,174 +1,82 @@
-import streamlit as st
 import os
-from dotenv import load_dotenv
-from operator import itemgetter
-from typing import List, Tuple, Dict, Any
+import streamlit as st
 from pinecone import Pinecone
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import OpenAIEmbeddings
+from langchain.chat_models import ChatOpenAI
+from langchain_community.vectorstores import ModifiedPineconeVectorStore
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
-from langchain_pinecone import PineconeVectorStore
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-
-os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
-os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
-
-class ModifiedPineconeVectorStore(PineconeVectorStore):
-    def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
-        super().__init__(index, embedding, text_key, namespace)
-        self.index = index
-        self._embedding = embedding
-        self._text_key = text_key
-        self._namespace = namespace
-
-    def similarity_search_with_score_by_vector(
-        self, embedding: List[float], k: int = 4, filter: Dict[str, Any] = None, namespace: str = None
-    ) -> List[Tuple[Document, float]]:
-        namespace = namespace or self._namespace
-        results = self.index.query(
-            vector=embedding,
-            top_k=k,
-            include_metadata=True,
-            include_values=True,
-            filter=filter,
-            namespace=namespace,
-        )
-        return [
-            (
-                Document(
-                    page_content=result["metadata"].get(self._text_key, ""),
-                    metadata={k: v for k, v in result["metadata"].items() if k != self._text_key}
-                ),
-                result["score"],
-            )
-            for result in results["matches"]
-        ]
-
-    def max_marginal_relevance_search_by_vector(
-        self, embedding: List[float], k: int = 4, fetch_k: int = 20,
-        lambda_mult: float = 0.5, filter: Dict[str, Any] = None, namespace: str = None
-    ) -> List[Document]:
-        namespace = namespace or self._namespace
-        results = self.index.query(
-            vector=embedding,
-            top_k=fetch_k,
-            include_metadata=True,
-            include_values=True,
-            filter=filter,
-            namespace=namespace,
-        )
-        if not results['matches']:
-            return []
-        
-        embeddings = [match['values'] for match in results['matches']]
-        mmr_selected = maximal_marginal_relevance(
-            np.array(embedding, dtype=np.float32),
-            embeddings,
-            k=min(k, len(results['matches'])),
-            lambda_mult=lambda_mult
-        )
-        
-        return [
-            Document(
-                page_content=results['matches'][i]['metadata'].get(self._text_key, ""),
-                metadata={
-                    'source': results['matches'][i]['metadata'].get('source', '').split('data\\')[-1] if 'source' in results['matches'][i]['metadata'] else 'Unknown'
-                }
-            )
-            for i in mmr_selected
-        ]
-
-def maximal_marginal_relevance(
-    query_embedding: np.ndarray,
-    embedding_list: List[np.ndarray],
-    k: int = 4,
-    lambda_mult: float = 0.5
-) -> List[int]:
-    similarity_scores = cosine_similarity([query_embedding], embedding_list)[0]
-
-    selected_indices = []
-    candidate_indices = list(range(len(embedding_list)))
-
-    for _ in range(k):
-        if not candidate_indices:
-            break
-        
-        mmr_scores = [
-            lambda_mult * similarity_scores[i] - (1 - lambda_mult) * max(
-                [cosine_similarity([embedding_list[i]], [embedding_list[s]])[0][0] for s in selected_indices] or [0]
-            )
-            for i in candidate_indices
-        ]
-
-        max_index = candidate_indices[np.argmax(mmr_scores)]
-        selected_indices.append(max_index)
-        candidate_indices.remove(max_index)
-
-    return selected_indices
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from typing import List
+from langchain_core.documents import Document
+from operator import itemgetter
 
 def main():
     st.title("Conference Q&A System")
+    
     # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = "conference"
     index = pc.Index(index_name)
+    
     # Select GPT model
     if "gpt_model" not in st.session_state:
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
     llm = ChatOpenAI(model=st.session_state.gpt_model)
+    
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
         index=index,
         embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
         text_key="source"
     )
+    
     # Set up retriever
     retriever = vectorstore.as_retriever(
         search_type='mmr',
         search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
     )
+    
     # Set up prompt template and chain
     template = """
-    def strategic_consultant(question, context):
+    def strategic_consultant(question: str, context: str) -> str:
         '''
         Analyze conference trends and provide strategic insights.
         
         Args:
-            question (str): The user's question about the conference.
-            context (str): Retrieved information related to the question.
+            question: The user's question about the conference.
+            context: Retrieved information related to the question.
         
         Returns:
-            str: A structured answer following the format below.
+            A structured answer following the format below.
         '''
         # Role definition
-        role = "20Y+ Strategic Consultant for a LG corporation"
+        role = "Strategic consultant for a large corporation"
         
         # Answer structure
         structure = {
             "introduction": {
-                "weight": 0.35,
+                "weight": 0.5,
                 "content": [
                     "Overall context of the conference",
                     "Main points or topics"
                 ]
             },
             "main_body": {
-                "weight": 0.4,
+                "weight": 0.3,
                 "content": [
                     "Analysis of key conference discussions",
                     "Relevant data or case studies"
                 ]
             },
             "conclusion": {
-                "weight": 0.25,
+                "weight": 0.2,
                 "content": [
                     "Summary of new trends",
                     "Derived insights",
@@ -178,30 +86,31 @@ def main():
         }
         
         # Generate answer
-        answer = f"As a {role}, here's my analysis based on the conference information:\\n\\n"
+        answer = f"As a {role}, here's my analysis based on the conference information:\n\n"
         
         for section, details in structure.items():
-            answer += f"{section.capitalize()}:\\n"
+            answer += f"{section.capitalize()}:\n"
             for point in details['content']:
-                answer += f"- {point}\\n"
-            answer += "\\n"
+                answer += f"- {point}\n"
+            answer += "\n"
         
         return answer
 
-    # Execute the function
-    question = "{question}"
-    context = "{context}"
-    response = strategic_consultant(question, context)
-    print(response)
+    # User's question: {question}
+    # Context: {context}
+    
+    # Execute the function and provide the analysis:
     """
     prompt = ChatPromptTemplate.from_template(template)
+    
     def format_docs(docs: List[Document]) -> str:
         formatted = []
         for doc in docs:
             source = doc.metadata.get('source', 'Unknown source')
             formatted.append(f"Source: {source}")
         return "\n\n" + "\n\n".join(formatted)
-    format = itemgetter("docs") | RunnableLambda(format_docs)
+    
+    format = itemgetter("docs") | RunnableParallel(format_docs)
     answer = prompt | llm | StrOutputParser()
     chain = (
         RunnableParallel(question=RunnablePassthrough(), docs=retriever)
@@ -209,15 +118,18 @@ def main():
         .assign(answer=answer)
         .pick(["answer", "docs"])
     )
+    
     # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+    
     # User input
     if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
+        
         with st.chat_message("assistant"):
             response = chain.invoke(question)
             answer = response['answer']
@@ -228,9 +140,9 @@ def main():
                 for i, doc in enumerate(source_documents, 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
-    # Add Plex.tv link
-            st.markdown("---")
-            st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
+        # Add Plex.tv link
+        st.markdown("---")
+        st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
         
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
