@@ -111,91 +111,92 @@ def maximal_marginal_relevance(
 
 def main():
     st.title("Conference Q&A System")
-
     # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = "conference"
     index = pc.Index(index_name)
-
     # Select GPT model
     if "gpt_model" not in st.session_state:
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
     llm = ChatOpenAI(model=st.session_state.gpt_model)
-
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
         index=index,
         embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
         text_key="source"
     )
-
     # Set up retriever
     retriever = vectorstore.as_retriever(
         search_type='mmr',
         search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
     )
-
     # Set up prompt template and chain
     template = """
-    You are a Korean assistant for question-answering tasks. 
-    Use the following pieces of retrieved context to answer the question. 
+    You are a strategic consultant for a large corporation, tasked with uncovering new trends and insights based on conference trends.
+    Use the following retrieved context to answer the question. 
     If you don't know the answer, just say that you don't know. 
-    You should answer in KOREAN and please give rich sentences to make the answer much better.
+    Please answer in English and provide rich sentences to enhance the quality of the answer.
+    
+    Answer structure:
+    [Introduction] (about 50% of the total answer):
+    - Explain the overall context of the conference related to the question
+    - Introduce the main points or topics
+    
+    [Main Body] (about 30% of the total answer):
+    - Analyze the key content discussed at the conference
+    - Present relevant data or case studies
+    
+    [Conclusion] (about 20% of the total answer):
+    - Summarize new trends based on the conference content
+    - Present derived insights
+    - Suggest future strategic directions
+    
     Question: {question} 
     Context: {context} 
     Answer:
     """
     prompt = ChatPromptTemplate.from_template(template)
-
     def format_docs(docs: List[Document]) -> str:
         formatted = []
         for doc in docs:
             source = doc.metadata.get('source', 'Unknown source')
             formatted.append(f"Source: {source}")
         return "\n\n" + "\n\n".join(formatted)
-
     format = itemgetter("docs") | RunnableLambda(format_docs)
     answer = prompt | llm | StrOutputParser()
-
     chain = (
         RunnableParallel(question=RunnablePassthrough(), docs=retriever)
         .assign(context=format)
         .assign(answer=answer)
         .pick(["answer", "docs"])
     )
-
     # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
     # User input
-    if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
+    if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
-
         with st.chat_message("assistant"):
             response = chain.invoke(question)
             answer = response['answer']
             source_documents = response['docs'][:5]  # Get up to 5 documents
-
             st.markdown(answer)
             
-            with st.expander("참조 문서"):
+            with st.expander("Reference Documents"):
                 for i, doc in enumerate(source_documents, 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
     # Add Plex.tv link
             st.markdown("---")
-            st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
-
+            st.markdown("[Watch related conference videos (Plex.tv)](https://app.plex.tv)")
         
         
         st.session_state.messages.append({"role": "assistant", "content": answer})
