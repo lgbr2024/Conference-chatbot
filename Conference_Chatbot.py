@@ -138,8 +138,7 @@ def main():
         search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
     )
 
-
-# Set up prompt template and chain
+    # Set up prompt template and chain
     template = """
     def strategic_consultant(question: str, context: str) -> str:
         '''
@@ -182,13 +181,13 @@ def main():
         }
         
         # Generate answer
-        answer = f"As a {role}, here's my analysis based on the conference information:\n\n"
+        answer = f"As a {role}, here's my analysis based on the conference information:\\n\\n"
         
         for section, details in structure.items():
-            answer += f"{section.capitalize()}:\n"
+            answer += f"{section.capitalize()}:\\n"
             for point in details['content']:
-                answer += f"- {point}\n"
-            answer += "\n"
+                answer += f"- {point}\\n"
+            answer += "\\n"
         
         return answer
 
@@ -198,7 +197,7 @@ def main():
     # Execute the function and provide the analysis:
     """
 
-prompt = ChatPromptTemplate.from_template(template)
+    prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs: List[Document]) -> str:
         formatted = []
