@@ -85,13 +85,13 @@ def main():
         }
         
         # Generate answer
-        answer = f"As a {role}, here's my analysis based on the conference information:\n\n"
+        answer = f"As a {role}, here's my analysis based on the conference information:\\n\\n"
         
         for section, details in structure.items():
-            answer += f"{section.capitalize()}:\n"
+            answer += f"{section.capitalize()}:\\n"
             for point in details['content']:
-                answer += f"- {point}\n"
-            answer += "\n"
+                answer += f"- {point}\\n"
+            answer += "\\n"
         
         return answer
 
@@ -125,4 +125,25 @@ def main():
     
     # User input
     if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
-        st.session_state.messages.append({"role": "user", "content
+        st.session_state.messages.append({"role": "user", "content": question})
+        with st.chat_message("user"):
+            st.markdown(question)
+        
+        with st.chat_message("assistant"):
+            response = chain.invoke(question)
+            answer = response['answer']
+            source_documents = response['docs'][:5]  # Get up to 5 documents
+            st.markdown(answer)
+            
+            with st.expander("참조 문서"):
+                for i, doc in enumerate(source_documents, 1):
+                    st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
+    
+        # Add Plex.tv link
+        st.markdown("---")
+        st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
+        
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+
+if __name__ == "__main__":
+    main()
