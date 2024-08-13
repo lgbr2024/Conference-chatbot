@@ -127,17 +127,17 @@ def main():
     )
     # Set up prompt template and chain
     template = """
-    You are a strategic consultant for a large corporation, tasked with uncovering new trends and insights based on conference trends.
+    You are a strategic consultant for a LG groups, tasked with uncovering new trends and insights based on conference trends.
     Use the following retrieved context to answer the question. 
     If you don't know the answer, just say that you don't know. 
     Please answer in Korean and provide rich sentences to enhance the quality of the answer.
     
     Answer structure:
-    [Introduction] (about 35% of the total answer):
+    [Overall Conference] (about 35% of the total answer):
     - Explain the overall context of the conference related to the question
     - Introduce the main points or topics
     
-    [Main Body] (about 40% of the total answer):
+    [Contents] (about 40% of the total answer):
     - Analyze the key content discussed at the conference
     - Present relevant data or case studies
     
