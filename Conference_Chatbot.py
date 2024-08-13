@@ -140,18 +140,18 @@ def main():
     You are a strategic consultant for a large corporation, tasked with uncovering new trends and insights based on conference trends.
     Use the following retrieved context to answer the question. 
     If you don't know the answer, just say that you don't know. 
-    Please answer in English and provide rich sentences to enhance the quality of the answer.
+    Please answer in Korean and provide rich sentences to enhance the quality of the answer.
     
     Answer structure:
-    [Introduction] (about 50% of the total answer):
+    [Introduction] (about 35% of the total answer):
     - Explain the overall context of the conference related to the question
     - Introduce the main points or topics
     
-    [Main Body] (about 30% of the total answer):
+    [Main Body] (about 40% of the total answer):
     - Analyze the key content discussed at the conference
     - Present relevant data or case studies
     
-    [Conclusion] (about 20% of the total answer):
+    [Conclusion] (about 25% of the total answer):
     - Summarize new trends based on the conference content
     - Present derived insights
     - Suggest future strategic directions
