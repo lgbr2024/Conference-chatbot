@@ -137,28 +137,62 @@ def main():
     )
     # Set up prompt template and chain
     template = """
-    You are a strategic consultant for a large corporation, tasked with uncovering new trends and insights based on conference trends.
-    Use the following retrieved context to answer the question. 
-    If you don't know the answer, just say that you don't know. 
-    Please answer in Korean and provide rich sentences to enhance the quality of the answer.
-    
-    Answer structure:
-    [Introduction] (about 35% of the total answer):
-    - Explain the overall context of the conference related to the question
-    - Introduce the main points or topics
-    
-    [Main Body] (about 40% of the total answer):
-    - Analyze the key content discussed at the conference
-    - Present relevant data or case studies
-    
-    [Conclusion] (about 25% of the total answer):
-    - Summarize new trends based on the conference content
-    - Present derived insights
-    - Suggest future strategic directions
-    
-    Question: {question} 
-    Context: {context} 
-    Answer:
+    def strategic_consultant(question, context):
+        '''
+        Analyze conference trends and provide strategic insights.
+        
+        Args:
+            question (str): The user's question about the conference.
+            context (str): Retrieved information related to the question.
+        
+        Returns:
+            str: A structured answer following the format below.
+        '''
+        # Role definition
+        role = "20Y+ Strategic Consultant for a LG corporation"
+        
+        # Answer structure
+        structure = {
+            "introduction": {
+                "weight": 0.35,
+                "content": [
+                    "Overall context of the conference",
+                    "Main points or topics"
+                ]
+            },
+            "main_body": {
+                "weight": 0.4,
+                "content": [
+                    "Analysis of key conference discussions",
+                    "Relevant data or case studies"
+                ]
+            },
+            "conclusion": {
+                "weight": 0.25,
+                "content": [
+                    "Summary of new trends",
+                    "Derived insights",
+                    "Suggested future strategic directions"
+                ]
+            }
+        }
+        
+        # Generate answer
+        answer = f"As a {role}, here's my analysis based on the conference information:\\n\\n"
+        
+        for section, details in structure.items():
+            answer += f"{section.capitalize()}:\\n"
+            for point in details['content']:
+                answer += f"- {point}\\n"
+            answer += "\\n"
+        
+        return answer
+
+    # Execute the function
+    question = "{question}"
+    context = "{context}"
+    response = strategic_consultant(question, context)
+    print(response)
     """
     prompt = ChatPromptTemplate.from_template(template)
     def format_docs(docs: List[Document]) -> str:
@@ -180,7 +214,7 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     # User input
-    if question := st.chat_input("Please ask a question about the conference:"):
+    if question := st.chat_input("컨퍼런스에 대해 질문해주세요:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
@@ -190,14 +224,13 @@ def main():
             source_documents = response['docs'][:5]  # Get up to 5 documents
             st.markdown(answer)
             
-            with st.expander("Reference Documents"):
+            with st.expander("참조 문서"):
                 for i, doc in enumerate(source_documents, 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
     # Add Plex.tv link
             st.markdown("---")
-            st.markdown("[Watch related conference videos (Plex.tv)](https://app.plex.tv)")
-        
+            st.markdown("[관련 컨퍼런스 영상 보기 (Plex.tv)](https://app.plex.tv)")
         
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
