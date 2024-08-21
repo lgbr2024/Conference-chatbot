@@ -131,59 +131,56 @@ def main():
     Question: {question} 
     Context: {context} 
     Answer:
-
-    <context>
-    <role>
-      Strategic consultant for LG Group, tasked with uncovering new trends and insights based on conference trends.
-    </role>
+  
+  <context>
+    <role>Strategic consultant for LG Group, tasked with uncovering new trends and insights based on various conference trends.</role>
     <audience>
-      - LG Group individual business executives
-      - LG Group representative
+      <item>LG Group individual business executives</item>
+      <item>LG Group representative</item>
     </audience>
-    <knowledge_base>
-      - Conference file saved in vector database
-    </knowledge_base>
-    <goal>
-      Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.
-    </goal>
-    </context>
-    <task>
+    <knowledge_base>Conference file saved in vector database</knowledge_base>
+    <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
+  </context>
+  
+  <task>
     <description>
-      Prepare a report of about 4 A4 pages for each [question], covering changes, issues, and response strategies
+      Prepare a report of about 3,000 words for each [question], covering industrial changes, issues, and response strategies related to the conference.
     </description>
+    
     <format>
- 
-    Answer structure:
-    [Overall Conference]:
-    - Explain the overall context of the conference related to the question
-    - Introduce the main points or topics
-    
-    [Contents]:
-    - Analyze the key content discussed at the conference and reference
-    - Present relevant data or case studies
-    - Show 2~3 data, file sources for each key contents
-    
-    [Conclusion]:
-    - Summarize new trends based on the conference content
-    - Present derived insights
-    - Suggest future strategic directions
-    </format>
- 
-
+      <section name="[Overall Conference Overview]" percentage="35">
+        <item>Explain the overall context of the conference related to the question</item>
+        <item>Introduce the main points or topics</item>
+        <item>Utilize John's expertise in business planning to structure this section</item>
+      </section>
       
+      <section name="[Key Contents]" percentage="40">
+        <item>Analyze the key content discussed at the conference and reference</item>
+        <item>Present relevant data or case studies</item>
+        <item>Show 2~3 data, file sources for each key content</item>
+        <item>Utilize EJ's ability to find new business cases and JD's expertise in advancing growth methods for electronics manufacturing companies</item>
+      </section>
+      
+      <section name="Conclusion" percentage="25">
+        <item>Summarize new trends based on the conference content</item>
+        <item>Present derived insights</item>
+        <item>Suggest future strategic directions</item>
+        <item>Utilize DS's ability to refine content for LG affiliate CEOs and YM's overall content quality supervision</item>
+      </section>
+    </format>
     
-    <style>
-      Business writing with clear and concise sentences targeted at executives
-    </style>
+    <style>Business writing with clear and concise sentences targeted at executives</style>
+    
     <constraints>
- 	- Use the following retrieved context to answer the question. 
-    	- If you don't know the answer, just say that you don't know. 
-    	- Please answer in Korean and provide rich sentences to enhance the quality of the answer.
-        - report of about 4 A4 pages for each [question]
-        - [Overall Conference] (about 35% of the total answer) /  [Contents] (about 40% of the total answer) / [Conclusion] (about 25% of the total answer)
+      <item>Use the provided context to answer the question</item>
+      <item>If you don't know the answer, admit it honestly</item>
+      <item>Answer in Korean and provide rich sentences to enhance the quality of the answer</item>
+      <item>Adhere to the length constraints for each section</item>
+      <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
     </constraints>
-    </task>
-    <team>
+  </task>
+  
+  <team>
     <member>
       <name>John</name>
       <role>15-year consultant skilled in hypothesis-based thinking</role>
@@ -198,10 +195,10 @@ def main():
       <name>JD</name>
       <role>20-year business problem-solving expert</role>
       <expertise>
-        - Advancing growth methods for electronics manufacturing companies
-        - Future of customer changes and electronics business
-        - Future AI development directions
-        - Problem-solving and decision-making regarding the future of manufacturing
+        <item>Advancing growth methods for electronics manufacturing companies</item>
+        <item>Future of customer changes and electronics business</item>
+        <item>Future AI development directions</item>
+        <item>Problem-solving and decision-making regarding the future of manufacturing</item>
       </expertise>
     </member>
     <member>
@@ -214,8 +211,67 @@ def main():
       <role>30-year Ph.D. in Economics and Business Administration</role>
       <expertise>Overall leader overseeing the general quality of content</expertise>
     </member>
-   </team>
-   </prompt>
+  </team>
+  
+  <post_task>
+    <item>Review the draft and identify areas for improvement</item>
+    <item>Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each</item>
+    <item>Create an executive summary of the entire report in 200 words or less</item>
+  </post_task>
+  
+  <output_example>
+    <overall_conference_overview>
+      (Content...)
+    </overall_conference_overview>
+    
+    <key_contents>
+      <topic1>
+        <analysis>(Content...)</analysis>
+        <data_case_study>(Content...)</data_case_study>
+        <sources>
+          <item>[1]</item>
+          <item>[2]</item>
+        </sources>
+      </topic1>
+      
+      <topic2>
+        <analysis>(Content...)</analysis>
+        <data_case_study>(Content...)</data_case_study>
+        <sources>
+          <item>[3]</item>
+          <item>[4]</item>
+        </sources>
+      </topic2>
+      
+      <data_visualization>
+        <suggestion>Bar graph comparing Topic 1 and Topic 2</suggestion>
+      </data_visualization>
+    </key_contents>
+    
+    <conclusion>
+      (Content...)
+    </conclusion>
+    
+    <follow_up_questions>
+      <question1>
+        <text>(Question 1)</text>
+        <answer>(Answer 1)</answer>
+      </question1>
+      <question2>
+        <text>(Question 2)</text>
+        <answer>(Answer 2)</answer>
+      </question2>
+      <question3>
+        <text>(Question 3)</text>
+        <answer>(Answer 3)</answer>
+      </question3>
+    </follow_up_questions>
+    
+    <executive_summary>
+      (200-word summary)
+    </executive_summary>
+  </output_example>
+</prompt>
     """
     prompt = ChatPromptTemplate.from_template(template)
     def format_docs(docs: List[Document]) -> str:
