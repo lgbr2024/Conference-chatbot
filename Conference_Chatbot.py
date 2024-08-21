@@ -144,7 +144,7 @@ def main():
   
   <task>
     <description>
-      Prepare a report of about 5,000+ words for each [question], covering industrial changes, issues, and response strategies related to the conference.
+      Describe about 7,000+ words for each [question], covering industrial changes, issues, and response strategies related to the conference.
     </description>
     
     <format>
@@ -161,7 +161,7 @@ def main():
         - Summarize new trends based on the conference content
         - Present derived insights
         - Suggest future strategic directions
-        - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each
+        - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each (3~4 sentences)
  
     </format>
     
