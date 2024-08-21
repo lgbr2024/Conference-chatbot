@@ -153,7 +153,7 @@ def main():
         - Introduce the main points or topics
             
      [Contents]
-        - Analyze the key content discussed at the conference and reference
+        - Analyze the key content discussed at the conference and reference.Describe 3~4 sentences for each key content.
         - Present relevant data or case studies
         - Show 2~3 data, file sources for each key content
        
