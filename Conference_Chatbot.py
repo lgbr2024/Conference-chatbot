@@ -148,25 +148,23 @@ def main():
     </description>
     
     <format>
-      <section name="[Overall Conference Overview]" percentage="35">
-        <item>Explain the overall context of the conference related to the question</item>
-        <item>Introduce the main points or topics</item>
-        <item>Utilize John's expertise in business planning to structure this section</item>
-      </section>
+     ##[Conference Overview]
+        - Explain the overall context of the conference related to the question
+        - Introduce the main points or topics
+        - Utilize John's expertise in business planning to structure this section
       
-      <section name="[Key Contents]" percentage="40">
-        <item>Analyze the key content discussed at the conference and reference</item>
-        <item>Present relevant data or case studies</item>
-        <item>Show 2~3 data, file sources for each key content</item>
-        <item>Utilize EJ's ability to find new business cases and JD's expertise in advancing growth methods for electronics manufacturing companies</item>
-      </section>
+     ##[Contents]
+        - Analyze the key content discussed at the conference and reference
+        - Present relevant data or case studies
+        - Show 2~3 data, file sources for each key content
+        - Utilize EJ's ability to find new business cases and JD's expertise in advancing growth methods for electronics manufacturing companies</item>
       
-      <section name="Conclusion" percentage="25">
-        <item>Summarize new trends based on the conference content</item>
-        <item>Present derived insights</item>
-        <item>Suggest future strategic directions</item>
-        <item>Utilize DS's ability to refine content for LG affiliate CEOs and YM's overall content quality supervision</item>
-      </section>
+      ##[Conclusion]
+        - Summarize new trends based on the conference content
+        - Present derived insights
+        - Suggest future strategic directions
+        - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each
+        - Utilize DS's ability to refine content for LG affiliate CEOs and YM's overall content quality supervision
     </format>
     
     <style>Business writing with clear and concise sentences targeted at executives</style>
@@ -177,6 +175,7 @@ def main():
       <item>Answer in Korean and provide rich sentences to enhance the quality of the answer</item>
       <item>Adhere to the length constraints for each section</item>
       <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
+      <item>[Conference Overview] (about 35% of the total answer) /  [Contents] (about 40% of the total answer) / [Conclusion] (about 25% of the total answer)
     </constraints>
   </task>
   
@@ -212,66 +211,7 @@ def main():
       <expertise>Overall leader overseeing the general quality of content</expertise>
     </member>
   </team>
-  
-  <post_task>
-    <item>Review the draft and identify areas for improvement</item>
-    <item>Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each</item>
-    <item>Create an executive summary of the entire report in 200 words or less</item>
-  </post_task>
-  
-  <output_example>
-    <overall_conference_overview>
-      (Content...)
-    </overall_conference_overview>
-    
-    <key_contents>
-      <topic1>
-        <analysis>(Content...)</analysis>
-        <data_case_study>(Content...)</data_case_study>
-        <sources>
-          <item>[1]</item>
-          <item>[2]</item>
-        </sources>
-      </topic1>
-      
-      <topic2>
-        <analysis>(Content...)</analysis>
-        <data_case_study>(Content...)</data_case_study>
-        <sources>
-          <item>[3]</item>
-          <item>[4]</item>
-        </sources>
-      </topic2>
-      
-      <data_visualization>
-        <suggestion>Bar graph comparing Topic 1 and Topic 2</suggestion>
-      </data_visualization>
-    </key_contents>
-    
-    <conclusion>
-      (Content...)
-    </conclusion>
-    
-    <follow_up_questions>
-      <question1>
-        <text>(Question 1)</text>
-        <answer>(Answer 1)</answer>
-      </question1>
-      <question2>
-        <text>(Question 2)</text>
-        <answer>(Answer 2)</answer>
-      </question2>
-      <question3>
-        <text>(Question 3)</text>
-        <answer>(Answer 3)</answer>
-      </question3>
-    </follow_up_questions>
-    
-    <executive_summary>
-      (200-word summary)
-    </executive_summary>
-  </output_example>
-</prompt>
+ </prompt>
     """
     prompt = ChatPromptTemplate.from_template(template)
     def format_docs(docs: List[Document]) -> str:
