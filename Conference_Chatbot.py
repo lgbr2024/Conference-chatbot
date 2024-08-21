@@ -144,22 +144,22 @@ def main():
   
   <task>
     <description>
-      Prepare a report of about 3,000 words for each [question], covering industrial changes, issues, and response strategies related to the conference.
+      Prepare a report of about 5,000+ words for each [question], covering industrial changes, issues, and response strategies related to the conference.
     </description>
     
     <format>
-     ##[Conference Overview]
+     [Conference Overview]
         - Explain the overall context of the conference related to the question
         - Introduce the main points or topics
         - Utilize John's expertise in business planning to structure this section
       
-     ##[Contents]
+     [Contents]
         - Analyze the key content discussed at the conference and reference
         - Present relevant data or case studies
         - Show 2~3 data, file sources for each key content
-        - Utilize EJ's ability to find new business cases and JD's expertise in advancing growth methods for electronics manufacturing companies</item>
+        - Utilize EJ's ability to find new business cases and JD's expertise in advancing growth methods for electronics manufacturing companies
       
-      ##[Conclusion]
+      [Conclusion]
         - Summarize new trends based on the conference content
         - Present derived insights
         - Suggest future strategic directions
