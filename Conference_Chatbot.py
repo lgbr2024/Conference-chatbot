@@ -202,7 +202,7 @@ def main():
   
   <task>
     <description>
-      Describe about 8,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
+      Describe about 12,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
     </description>
     
     <format>
