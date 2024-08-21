@@ -140,11 +140,69 @@ def main():
     </audience>
     <knowledge_base>Conference file saved in vector database</knowledge_base>
     <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
+    <research-principles>
+      <principle>
+        <name>Insightful Analysis and Insight Generation</name>
+        <points>
+          <point>Emphasize deep analysis and meaningful insights beyond simple phenomenon observation.</point>
+          <point>Don't just see the dots, create lines.</point>
+          <point>While individual pieces have meaning, they should be viewed from a more evolved perspective.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Long-term Perspective and Proactive Response</name>
+        <points>
+          <point>Stress the importance of a long-term view, considering the 'plane' 5-10 years in the future, not just the present.</point>
+          <point>Emphasize the importance of proactive preparation and readiness before problems arise.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Sensitivity and Adaptability to Change</name>
+        <points>
+          <point>Highlight the need for awareness of rapidly changing environments and quick adaptation.</point>
+          <point>Encourage approaching issues with new perspectives, breaking away from existing preconceptions.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Value Creation and Inducing Practical Change</name>
+        <points>
+          <point>Stress moving beyond mere analysis or reporting to actually create value and drive change.</point>
+          <point>Mention the importance of inducing real change in clients or organizations.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Importance of Networking and Collaboration</name>
+        <points>
+          <point>Emphasize the importance of collaboration and network building between departments and with external entities.</point>
+          <point>Loose connections should always be within reach when needed.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Proactive Researcher Role</name>
+        <points>
+          <point>Stress the role of researchers in proactively identifying and solving problems without waiting for instructions.</point>
+          <point>Emphasize doing work that hasn't been assigned.</point>
+        </points>
+      </principle>
+  
+      <principle>
+        <name>Practical and Specific Approach</name>
+        <points>
+          <point>Highlight the importance of developing concrete, applicable solutions rather than abstract discussions.</point>
+          <point>Mention the need to consider how to respond and what preparations to begin.</point>
+        </points>
+      </principle>
+    </research-principles>
   </context>
   
   <task>
     <description>
-      Describe about 7,000+ words for each [question], covering industrial changes, issues, and response strategies related to the conference.
+      Describe about 8,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
     </description>
     
     <format>
