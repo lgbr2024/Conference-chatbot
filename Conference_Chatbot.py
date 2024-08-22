@@ -13,6 +13,7 @@ from langchain_pinecone import PineconeVectorStore
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import time
+from langchain_core.messages import HumanMessage, SystemMessage
 
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
@@ -112,14 +113,15 @@ def generate_response_in_parts(llm, prompt, question, context):
     
     for i, section in enumerate(sections):
         section_prompt = f"""
-        {prompt.template}
-        
         Response so far: {full_response}
         
         Please write the next section: {section}
         """
         
-        messages = [{"role": "user", "content": section_prompt.format(question=question, context=context)}]
+        messages = [
+            SystemMessage(content=prompt),
+            HumanMessage(content=f"Question: {question}\nContext: {context}\n\n{section_prompt}")
+        ]
         response = llm.invoke(messages)
         section_content = response.content
         
@@ -332,7 +334,7 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-    # User input
+ # User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
@@ -357,7 +359,7 @@ def main():
                 
                 # Step 3: Generating Answer
                 status_placeholder.text("Generating answer...")
-                for progress, partial_response in generate_response_in_parts(llm, prompt, question, context):
+                for progress, partial_response in generate_response_in_parts(llm, system_prompt, question, context):
                     progress_bar.progress(0.2 + progress * 0.8)  # Start from 20% to 100%
                     response_placeholder.markdown(partial_response)
                     time.sleep(0.1)  # Short pause for better visualization
