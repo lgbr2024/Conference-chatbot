@@ -12,8 +12,10 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_pinecone import PineconeVectorStore
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
+
 class ModifiedPineconeVectorStore(PineconeVectorStore):
     def __init__(self, index, embedding, text_key: str = "text", namespace: str = ""):
         super().__init__(index, embedding, text_key, namespace)
@@ -21,6 +23,7 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
         self._embedding = embedding
         self._text_key = text_key
         self._namespace = namespace
+
     def similarity_search_with_score_by_vector(
         self, embedding: List[float], k: int = 4, filter: Dict[str, Any] = None, namespace: str = None
     ) -> List[Tuple[Document, float]]:
@@ -43,6 +46,7 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
             )
             for result in results["matches"]
         ]
+
     def max_marginal_relevance_search_by_vector(
         self, embedding: List[float], k: int = 4, fetch_k: int = 20,
         lambda_mult: float = 0.5, filter: Dict[str, Any] = None, namespace: str = None
@@ -76,6 +80,7 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
             )
             for i in mmr_selected
         ]
+
 def maximal_marginal_relevance(
     query_embedding: np.ndarray,
     embedding_list: List[np.ndarray],
@@ -99,32 +104,39 @@ def maximal_marginal_relevance(
         selected_indices.append(max_index)
         candidate_indices.remove(max_index)
     return selected_indices
+
 def main():
     st.title("Conference Q&A System")
+    
     # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = "conference"
     index = pc.Index(index_name)
+    
     # Select GPT model
     if "gpt_model" not in st.session_state:
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
     llm = ChatOpenAI(model=st.session_state.gpt_model)
+    
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
         index=index,
         embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
         text_key="source"
     )
+    
     # Set up retriever
     retriever = vectorstore.as_retriever(
         search_type='mmr',
         search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
     )
+    
     # Set up prompt template and chain
     template = """
     <prompt>
@@ -132,7 +144,7 @@ def main():
     Context: {context} 
     Answer:
   
-  <context>
+    <context>
     <role>Strategic consultant for LG Group, tasked with uncovering new trends and insights based on various conference trends.</role>
     <audience>
       <item>LG Group individual business executives</item>
@@ -270,12 +282,14 @@ def main():
  </prompt>
     """
     prompt = ChatPromptTemplate.from_template(template)
+
     def format_docs(docs: List[Document]) -> str:
         formatted = []
         for doc in docs:
             source = doc.metadata.get('source', 'Unknown source')
             formatted.append(f"Source: {source}")
         return "\n\n" + "\n\n".join(formatted)
+
     format = itemgetter("docs") | RunnableLambda(format_docs)
     answer = prompt | llm | StrOutputParser()
     chain = (
@@ -284,17 +298,38 @@ def main():
         .assign(answer=answer)
         .pick(["answer", "docs"])
     )
+
     # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+    
     # User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
+        
         with st.chat_message("assistant"):
-            response = chain.invoke(question)
+            # Create placeholder for progress messages
+            progress_placeholder = st.empty()
+            
+            # Show "Searching..." message
+            with progress_placeholder.container():
+                with st.spinner("Searching..."):
+                    # Perform the search
+                    search_result = retriever.get_relevant_documents(question)
+            
+            # Show "Thinking..." message
+            with progress_placeholder.container():
+                with st.spinner("Thinking..."):
+                    # Generate the response
+                    response = chain.invoke(question)
+            
+            # Clear the progress messages
+            progress_placeholder.empty()
+            
+            # Display the answer
             answer = response['answer']
             source_documents = response['docs'][:5]  # Get up to 5 documents
             st.markdown(answer)
@@ -303,11 +338,11 @@ def main():
                 for i, doc in enumerate(source_documents, 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
-    # Add Plex.tv link
+            # Add Plex.tv link
             st.markdown("---")
             st.markdown("[Watch related conference videos (Plex.tv)](https://app.plex.tv)")
         
-        
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
 if __name__ == "__main__":
     main()
