@@ -107,16 +107,16 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
-def animated_progress_bar():
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    for i in range(100):
-        progress_bar.progress(i + 1)
-        status_text.text(f"Thinking... {i+1}%")
-        time.sleep(0.05)  # Adjust the speed of progress
-    progress_bar.empty()
-    status_text.empty()
-
+def adaptive_progress_bar(progress_placeholder, status_placeholder, duration):
+    start_time = time.time()
+    while time.time() - start_time < duration:
+        elapsed = time.time() - start_time
+        progress = min(elapsed / duration, 1.0)
+        progress_placeholder.progress(progress)
+        status_placeholder.text(f"Processing... {int(progress * 100)}%")
+        time.sleep(0.1)
+    progress_placeholder.empty()
+    status_placeholder.empty()
 def main():
     st.title("Conference Q&A System")
     
@@ -321,30 +321,43 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
- # User input
+# User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create a container for progress display
-            progress_container = st.empty()
+            progress_placeholder = st.empty()
+            status_placeholder = st.empty()
             
-            with progress_container.container():
-                # Display progress bar with animation effect
-                animated_progress_bar()
+            # Estimate processing time based on question complexity (example)
+            estimated_duration = len(question) * 0.1  # 0.1 second per character
+            
+            # Start progress bar in a separate thread
+            progress_thread = threading.Thread(
+                target=adaptive_progress_bar,
+                args=(progress_placeholder, status_placeholder, estimated_duration)
+            )
+            progress_thread.start()
             
             try:
+                start_time = time.time()
                 # Generate the actual response
                 response = chain.invoke(question)
                 answer = response['answer']
+                actual_duration = time.time() - start_time
             finally:
-                # Remove progress display
-                progress_container.empty()
+                # Ensure progress bar reaches 100%
+                progress_thread.join()
+                progress_placeholder.empty()
+                status_placeholder.empty()
             
             # Display the answer
             st.markdown(answer)
+            
+            # Display actual processing time
+            st.info(f"Processing time: {actual_duration:.2f} seconds")
             
             with st.expander("Reference Documents"):
                 docs = response['docs']
