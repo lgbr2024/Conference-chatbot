@@ -107,29 +107,6 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
-def search_documents(retriever, query: str, progress_bar, status_text):
-    progress_bar.progress(0)
-    status_text.text("Embedding question...")
-    time.sleep(1)  # Simulating embedding time
-    
-    progress_bar.progress(25)
-    status_text.text("Searching database...")
-    docs = retriever.get_relevant_documents(query)
-    time.sleep(1)  # Simulating search time
-    
-    progress_bar.progress(50)
-    status_text.text("Processing results...")
-    time.sleep(1)  # Simulating processing time
-    
-    progress_bar.progress(75)
-    status_text.text("Preparing response...")
-    time.sleep(1)  # Simulating preparation time
-    
-    progress_bar.progress(100)
-    status_text.text("Search completed!")
-    
-    return docs
-
 def animated_loading():
     animation = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     messages = [
@@ -151,6 +128,29 @@ def update_loading_animation(placeholder):
     while not placeholder.empty():
         placeholder.info(next(loading_animation))
         time.sleep(0.1)
+
+def search_documents(retriever, query: str, progress_bar, status_text):
+    progress_bar.progress(0)
+    status_text.text("Embedding query...")
+    time.sleep(1)  # Simulating embedding time
+    
+    progress_bar.progress(25)
+    status_text.text("Searching vector database...")
+    docs = retriever.get_relevant_documents(query)
+    time.sleep(1)  # Simulating search time
+    
+    progress_bar.progress(50)
+    status_text.text("Processing results...")
+    time.sleep(1)  # Simulating processing time
+    
+    progress_bar.progress(75)
+    status_text.text("Preparing response...")
+    time.sleep(1)  # Simulating preparation time
+    
+    progress_bar.progress(100)
+    status_text.text("Search completed!")
+    
+    return docs
 
 def main():
     st.title("Conference Q&A System")
@@ -200,7 +200,7 @@ def main():
     <knowledge_base>Conference file saved in vector database</knowledge_base>
     <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
     <research-principles>
-      ... (research principles remain unchanged)
+      ... (research principles content)
     </research-principles>
     </context>
   
@@ -236,7 +236,7 @@ def main():
     <constraints>
       <item>Use the provided context to answer the question</item>
       <item>If you don't know the answer, admit it honestly</item>
-      <item>Answer in English and provide rich sentences to enhance the quality of the answer</item>
+      <item>Answer in Korean and provide rich sentences to enhance the quality of the answer</item>
       <item>Adhere to the length constraints for each section</item>
       <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
       <item>[Conference Overview] (about 35% of the total answer) /  [Contents] (about 40% of the total answer) / [Conclusion] (about 25% of the total answer)</item>
@@ -245,7 +245,7 @@ def main():
     </task>
   
     <team>
-      ... (team information remains unchanged)
+      ... (team information content)
     </team>
     </prompt>
     """
@@ -279,10 +279,12 @@ def main():
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for progress bar and status text
+            # Create placeholders for various UI elements
             progress_bar = st.progress(0)
             status_text = st.empty()
             search_results = st.empty()
+            loading_placeholder = st.empty()
+            final_answer = st.empty()
             
             # Perform the search with visual feedback
             docs = search_documents(retriever, question, progress_bar, status_text)
@@ -295,7 +297,6 @@ def main():
                         st.write(doc.page_content[:200] + "...")  # Display first 200 characters
             
             # Show animated loading message
-            loading_placeholder = st.empty()
             loading_thread = threading.Thread(target=update_loading_animation, args=(loading_placeholder,))
             loading_thread.start()
             
@@ -312,8 +313,14 @@ def main():
             progress_bar.empty()
             status_text.empty()
             
+            # Check if the answer starts with a format indicator
+            format_indicators = ["[Conference Overview]", "[Contents]", "[Conclusion]"]
+            if any(answer.strip().startswith(indicator) for indicator in format_indicators):
+                # If formatted answer, clear the search results
+                search_results.empty()
+            
             # Display the answer
-            st.markdown(answer)
+            final_answer.markdown(answer)
             
             with st.expander("Reference Documents"):
                 for i, doc in enumerate(docs[:5], 1):
