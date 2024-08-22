@@ -110,11 +110,11 @@ def maximal_marginal_relevance(
 def animated_loading():
     animation = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     messages = [
-        "Analyzing information...",
-        "Processing relevant data...",
-        "Deriving insights...",
-        "Generating response...",
-        "Finalizing results..."
+        "Searching for relevant information...",
+        "Analyzing conference data...",
+        "Processing key insights...",
+        "Generating comprehensive response...",
+        "Finalizing answer..."
     ]
     i = 0
     while True:
@@ -128,29 +128,6 @@ def update_loading_animation(placeholder):
     while not placeholder.empty():
         placeholder.info(next(loading_animation))
         time.sleep(0.1)
-
-def search_documents(retriever, query: str, progress_bar, status_text):
-    progress_bar.progress(0)
-    status_text.text("Embedding query...")
-    time.sleep(1)  # Simulating embedding time
-    
-    progress_bar.progress(25)
-    status_text.text("Searching vector database...")
-    docs = retriever.get_relevant_documents(query)
-    time.sleep(1)  # Simulating search time
-    
-    progress_bar.progress(50)
-    status_text.text("Processing results...")
-    time.sleep(1)  # Simulating processing time
-    
-    progress_bar.progress(75)
-    status_text.text("Preparing response...")
-    time.sleep(1)  # Simulating preparation time
-    
-    progress_bar.progress(100)
-    status_text.text("Search completed!")
-    
-    return docs
 
 def main():
     st.title("Conference Q&A System")
@@ -279,24 +256,11 @@ def main():
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for various UI elements
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            search_results = st.empty()
+            # Create placeholders for loading animation and final answer
             loading_placeholder = st.empty()
             final_answer = st.empty()
             
-            # Perform the search with visual feedback
-            docs = search_documents(retriever, question, progress_bar, status_text)
-            
-            # Display search results
-            with search_results.container():
-                st.subheader("Relevant Documents Found:")
-                for i, doc in enumerate(docs, 1):
-                    with st.expander(f"Document {i}: {doc.metadata.get('source', 'Unknown source')[:50]}..."):
-                        st.write(doc.page_content[:200] + "...")  # Display first 200 characters
-            
-            # Show animated loading message
+            # Start animated loading message
             loading_thread = threading.Thread(target=update_loading_animation, args=(loading_placeholder,))
             loading_thread.start()
             
@@ -309,21 +273,12 @@ def main():
                 loading_placeholder.empty()
                 loading_thread.join()
             
-            # Clear progress indicators
-            progress_bar.empty()
-            status_text.empty()
-            
-            # Check if the answer starts with a format indicator
-            format_indicators = ["[Conference Overview]", "[Contents]", "[Conclusion]"]
-            if any(answer.strip().startswith(indicator) for indicator in format_indicators):
-                # If formatted answer, clear the search results
-                search_results.empty()
-            
             # Display the answer
             final_answer.markdown(answer)
             
             with st.expander("Reference Documents"):
-                for i, doc in enumerate(docs[:5], 1):
+                docs = response['docs']
+                for i, doc in enumerate(docs[:10], 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
             # Add Plex.tv link
