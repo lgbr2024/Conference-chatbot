@@ -338,34 +338,31 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-    # User input
+   # User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for loading animation, progress bar, and final answer
-            loading_placeholder = st.empty()
-            progress_bar = st.progress(0)
-            final_answer = st.empty()
+            # Create placeholder for processing message
+            message_placeholder = st.empty()
             
-            # Start animated loading message and progress bar
-            loading_thread = threading.Thread(target=update_loading_animation, args=(loading_placeholder, progress_bar))
-            loading_thread.start()
+            # Display processing message
+            for i in range(3):
+                message_placeholder.text("처리 중" + "." * (i + 1))
+                time.sleep(0.5)
             
             try:
                 # Generate the response
                 response = chain.invoke(question)
                 answer = response['answer']
             finally:
-                # Stop the loading animation and progress bar
-                loading_placeholder.empty()
-                progress_bar.empty()
-                loading_thread.join()
+                # Remove processing message
+                message_placeholder.empty()
             
             # Display the answer
-            final_answer.markdown(answer)
+            st.markdown(answer)
             
             with st.expander("Reference Documents"):
                 docs = response['docs']
