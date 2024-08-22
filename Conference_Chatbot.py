@@ -106,6 +106,28 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
+def generate_response_in_parts(llm, prompt, question, context):
+    sections = ["[Conference Overview]", "[Contents]", "[Conclusion]"]
+    full_response = ""
+    
+    for i, section in enumerate(sections):
+        section_prompt = f"""
+        {prompt.template}
+        
+        Response so far: {full_response}
+        
+        Please write the next section: {section}
+        """
+        
+        messages = [{"role": "user", "content": section_prompt.format(question=question, context=context)}]
+        response = llm.invoke(messages)
+        section_content = response.content
+        
+        full_response += section_content + "\n\n"
+        progress = (i + 1) / len(sections)
+        
+        yield progress, full_response.strip()
+
 def main():
     st.title("Conference Q&A System")
     
@@ -317,50 +339,47 @@ def main():
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for status updates
             status_placeholder = st.empty()
             progress_bar = st.progress(0)
+            response_placeholder = st.empty()
             
             try:
                 # Step 1: Query Processing
                 status_placeholder.text("Processing query...")
-                progress_bar.progress(25)
-                time.sleep(1)  # Simulate processing time
+                progress_bar.progress(0.1)
+                time.sleep(0.5)
                 
                 # Step 2: Searching Database
                 status_placeholder.text("Searching database...")
-                progress_bar.progress(50)
-                response = chain.invoke(question)
-                time.sleep(1)  # Simulate search time
+                progress_bar.progress(0.2)
+                context = format_docs(retriever.invoke(question))
+                time.sleep(0.5)
                 
                 # Step 3: Generating Answer
                 status_placeholder.text("Generating answer...")
-                progress_bar.progress(75)
-                answer = response['answer']
-                time.sleep(1)  # Simulate generation time
+                for progress, partial_response in generate_response_in_parts(llm, prompt, question, context):
+                    progress_bar.progress(0.2 + progress * 0.8)  # Start from 20% to 100%
+                    response_placeholder.markdown(partial_response)
+                    time.sleep(0.1)  # Short pause for better visualization
                 
                 # Step 4: Finalizing Response
-                status_placeholder.text("Finalizing response...")
-                progress_bar.progress(100)
-                time.sleep(0.5)  # Short pause to show completion
+                status_placeholder.text("Response complete")
+                progress_bar.progress(1.0)
                 
+                # Add to chat history
+                st.session_state.messages.append({"role": "assistant", "content": partial_response})
+                
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
             finally:
                 # Clear status displays
                 status_placeholder.empty()
                 progress_bar.empty()
             
-            # Display the answer
-            st.markdown(answer)
-            
             # Display sources
             with st.expander("Sources"):
-                for doc in response['docs']:
+                for doc in retriever.invoke(question):
                     st.write(f"- {doc.metadata['source']}")
-            
-            # Add assistant's response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if __name__ == "__main__":
     main()
-
-
