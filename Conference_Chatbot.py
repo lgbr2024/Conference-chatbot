@@ -107,32 +107,15 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
-def animated_loading():
-    animation = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    messages = [
-        "Searching for relevant information...",
-        "Analyzing conference data...",
-        "Processing key insights...",
-        "Generating comprehensive response...",
-        "Finalizing answer..."
-    ]
-    i = 0
-    while True:
-        for frame in animation:
-            yield f"{frame} {messages[i % len(messages)]}"
-            time.sleep(0.1)
-        i += 1
-
-def update_loading_animation(placeholder, progress_bar):
-    loading_animation = animated_loading()
-    progress = 0
-    while not placeholder.empty():
-        placeholder.info(next(loading_animation))
-        progress += 0.5
-        if progress > 100:
-            progress = 0
-        progress_bar.progress(int(progress))
-        time.sleep(0.1)
+def animated_progress_bar():
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    for i in range(100):
+        progress_bar.progress(i + 1)
+        status_text.text(f"Thinking... {i+1}%")
+        time.sleep(0.05)  # Adjust the speed of progress
+    progress_bar.empty()
+    status_text.empty()
 
 def main():
     st.title("Conference Q&A System")
@@ -338,28 +321,27 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-   # User input
+ # User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholder for processing message
-            message_placeholder = st.empty()
+            # Create a container for progress display
+            progress_container = st.empty()
             
-            # Display processing message
-            for i in range(3):
-                message_placeholder.text("Thinking" + "." * (i + 1))
-                time.sleep(0.5)
+            with progress_container.container():
+                # Display progress bar with animation effect
+                animated_progress_bar()
             
             try:
-                # Generate the response
+                # Generate the actual response
                 response = chain.invoke(question)
                 answer = response['answer']
             finally:
-                # Remove processing message
-                message_placeholder.empty()
+                # Remove progress display
+                progress_container.empty()
             
             # Display the answer
             st.markdown(answer)
