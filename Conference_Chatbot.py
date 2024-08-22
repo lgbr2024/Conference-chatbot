@@ -123,7 +123,7 @@ def main():
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
-    llm = ChatOpenAI(model=st.session_state.gpt_model, max_tokens=4096)
+    llm = ChatOpenAI(model=st.session_state.gpt_model, max_tokens=8000, temperature=0.56)
     
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
@@ -219,19 +219,19 @@ def main():
      </description>
     
     <format>
-     [Conference Overview]
+     [Conference Overview] (about 4,000 words)
         - Explain the overall context of the conference related to the question
         - Introduce the main points or topics
                    
-     [Contents]
+     [Contents] (about 7,000 words)
         - Analyze the key content discussed at the conference and reference.
         - For each key session or topic:
           - Provide a detailed description of approximately 5 sentences.
           - Include specific examples, data points, or case studies mentioned in the session.
-          - Show 2~3 data, file sources for each key content
+          - Show 2~3 file sources for each key content
         - For each major point, explain how it embodies the 'Practical and Specific Approach' principle
        
-      [Conclusion]
+      [Conclusion] (about 4,000 words)
         - Summarize new trends based on the conference content
         - Present derived insights, emphasizing the 'Value Creation and Inducing Practical Change' principle
         - Suggest future strategic directions, incorporating the 'Proactive Researcher Role' principle
