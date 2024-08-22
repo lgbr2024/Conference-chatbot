@@ -123,7 +123,7 @@ def main():
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
-    llm = ChatOpenAI(model=st.session_state.gpt_model, max_tokens=4096)
+    llm = ChatOpenAI(model=st.session_state.gpt_model)
     
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
