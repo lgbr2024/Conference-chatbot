@@ -245,8 +245,7 @@ def main():
      [Conference Overview]
         - Explain the overall context of the conference related to the question
         - Introduce the main points or topics
-        - Highlight how these align with the research principles, especially 'Long-term Perspective and Proactive Response'
-            
+                   
      [Contents]
         - Analyze the key content discussed at the conference and reference.
         - For each key session or topic:
@@ -254,7 +253,6 @@ def main():
           - Include specific examples, data points, or case studies mentioned in the session.
           - Show 2~3 data, file sources for each key content
         - For each major point, explain how it embodies the 'Practical and Specific Approach' principle
-
        
       [Conclusion]
         - Summarize new trends based on the conference content
@@ -262,7 +260,6 @@ def main():
         - Suggest future strategic directions, incorporating the 'Proactive Researcher Role' principle
         - Propose concrete next steps that reflect the 'Practical and Specific Approach'
         - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each (3~4 sentences)
-        - Conclude with a call to action that embodies the 'Importance of Networking and Collaboration' principle
 
  
     </format>
