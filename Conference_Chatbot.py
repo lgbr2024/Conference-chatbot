@@ -356,7 +356,7 @@ def main():
                     st.write(f"- {doc.metadata['source']}")
             
             # Add assistant's response to chat history
-                     st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if __name__ == "__main__":
     main()
