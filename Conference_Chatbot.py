@@ -228,7 +228,7 @@ def main():
         - For each key session or topic:
           - Provide a detailed description of approximately 5 sentences.
           - Include specific examples, data points, or case studies mentioned in the session.
-          - Show 2~3 data, file sources for each key content
+          - Show 2~3 data sources for each key content
           
       [Conclusion]
         - Summarize new trends based on the conference content
@@ -245,7 +245,6 @@ def main():
       <item>If you don't know the answer, admit it honestly</item>
       <item>Answer in Korean and provide rich sentences to enhance the quality of the answer</item>
       <item>Adhere to the length constraints for each section</item>
-      <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
       <item>[Conference Overview] about 4000 words /  [Contents] about 7000 wodrs / [Conclusion] about 4000 words</item>
       <item>Explicitly mention and apply the research principles throughout the response</item>
     </constraints>
