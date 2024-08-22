@@ -365,9 +365,7 @@ def main():
             # Display the answer
             st.markdown(answer)
             
-            # Display actual processing time
-            st.info(f"Processing time: {actual_duration:.2f} seconds")
-            
+           
             # ... (rest of the code remains the same)
 
 if __name__ == "__main__":
