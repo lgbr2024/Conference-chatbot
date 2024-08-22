@@ -214,24 +214,36 @@ def main():
   
   <task>
     <description>
-      Describe about 15,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
-    </description>
+     Describe about 15,000+ words for covering industrial changes, issues, and response strategies related to the conference. Explicitly reflect and incorporate the [research principles] throughout your analysis and recommendations. 
+     </description>
     
     <format>
      [Conference Overview]
         - Explain the overall context of the conference related to the question
         - Introduce the main points or topics
+        - Highlight how these align with the research principles, especially 'Long-term Perspective and Proactive Response'
             
      [Contents]
-        - Analyze the key content discussed at the conference and reference.Describe 3~4 sentences for each key content.
+        - Analyze the key content discussed at the conference and reference.
+        - For each key session or topic:
+          - Provide a detailed description of approximately 5 sentences.
+          - Include specific examples, data points, or case studies mentioned in the session.
+          - Highlight any innovative ideas or technologies discussed.
+          - Connect the session content to broader industry trends or challenges.
+          - Explicitly relate the content to relevant research principles, such as 'Insightful Analysis and Insight Generation' or 'Sensitivity and Adaptability to Change'.
         - Present relevant data or case studies
         - Show 2~3 data, file sources for each key content
+        - For each major point, explain how it embodies the 'Practical and Specific Approach' principle
+
        
       [Conclusion]
         - Summarize new trends based on the conference content
-        - Present derived insights
-        - Suggest future strategic directions
+        - Present derived insights, emphasizing the 'Value Creation and Inducing Practical Change' principle
+        - Suggest future strategic directions, incorporating the 'Proactive Researcher Role' principle
+        - Propose concrete next steps that reflect the 'Practical and Specific Approach'
         - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each (3~4 sentences)
+        - Conclude with a call to action that embodies the 'Importance of Networking and Collaboration' principle
+
  
     </format>
     
@@ -244,6 +256,7 @@ def main():
       <item>Adhere to the length constraints for each section</item>
       <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
       <item>[Conference Overview] (about 35% of the total answer) /  [Contents] (about 40% of the total answer) / [Conclusion] (about 25% of the total answer)
+      <item>Explicitly mention and apply the research principles throughout the response</item>
     </constraints>
   </task>
   
