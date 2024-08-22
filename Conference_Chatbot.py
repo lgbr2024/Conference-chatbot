@@ -350,7 +350,7 @@ def main():
             
             # Display processing message
             for i in range(3):
-                message_placeholder.text("처리 중" + "." * (i + 1))
+                message_placeholder.text("Thinking" + "." * (i + 1))
                 time.sleep(0.5)
             
             try:
