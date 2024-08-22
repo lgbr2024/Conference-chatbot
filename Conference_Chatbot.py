@@ -13,7 +13,6 @@ from langchain_pinecone import PineconeVectorStore
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import time
-import threading
 
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
@@ -107,19 +106,6 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
-def adaptive_progress_bar(progress_placeholder, status_placeholder, event):
-    progress = 0
-    while not event.is_set() and progress < 100:
-        progress += 1
-        progress_placeholder.progress(progress)
-        status_placeholder.text(f"Processing... {progress}%")
-        time.sleep(0.1)  # Slower update for better visibility
-    
-    if not event.is_set():
-        progress_placeholder.progress(100)
-        status_placeholder.text("Processing... 100%")
-        time.sleep(0.5)  # Short pause at 100%
-    
 def main():
     st.title("Conference Q&A System")
     
@@ -324,49 +310,57 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-# User input
+    # User input
     if question := st.chat_input("Please ask a question about the conference:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            progress_placeholder = st.empty()
+            # Create placeholders for status updates
             status_placeholder = st.empty()
-            
-            # Event to signal when processing is complete
-            processing_complete = threading.Event()
-            
-            # Start progress bar in a separate thread
-            progress_thread = threading.Thread(
-                target=adaptive_progress_bar,
-                args=(progress_placeholder, status_placeholder, processing_complete)
-            )
-            progress_thread.start()
+            progress_bar = st.progress(0)
             
             try:
-                start_time = time.time()
-                # Generate the actual response
-                response = chain.invoke(question)
-                answer = response['answer']
-                actual_duration = time.time() - start_time
-            finally:
-                # Signal that processing is complete
-                processing_complete.set()
-                progress_thread.join()
+                # Step 1: Query Processing
+                status_placeholder.text("Processing query...")
+                progress_bar.progress(25)
+                time.sleep(1)  # Simulate processing time
                 
-                # Ensure progress bar reaches 100%
-                progress_placeholder.progress(100)
-                status_placeholder.text("Processing complete!")
+                # Step 2: Searching Database
+                status_placeholder.text("Searching database...")
+                progress_bar.progress(50)
+                response = chain.invoke(question)
+                time.sleep(1)  # Simulate search time
+                
+                # Step 3: Generating Answer
+                status_placeholder.text("Generating answer...")
+                progress_bar.progress(75)
+                answer = response['answer']
+                time.sleep(1)  # Simulate generation time
+                
+                # Step 4: Finalizing Response
+                status_placeholder.text("Finalizing response...")
+                progress_bar.progress(100)
                 time.sleep(0.5)  # Short pause to show completion
-                progress_placeholder.empty()
+                
+            finally:
+                # Clear status displays
                 status_placeholder.empty()
+                progress_bar.empty()
             
             # Display the answer
             st.markdown(answer)
             
-           
-            # ... (rest of the code remains the same)
+            # Display sources
+            with st.expander("Sources"):
+                for doc in response['docs']:
+                    st.write(f"- {doc.metadata['source']}")
+            
+            # Add assistant's response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": answer})
 
 if __name__ == "__main__":
     main()
+
+
