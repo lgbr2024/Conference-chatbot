@@ -105,6 +105,29 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
+def search_documents(retriever, query: str, progress_bar, status_text):
+    progress_bar.progress(0)
+    status_text.text("Embedding query...")
+    time.sleep(1)  # Simulating embedding time
+    
+    progress_bar.progress(25)
+    status_text.text("Searching vector database...")
+    docs = retriever.get_relevant_documents(query)
+    time.sleep(1)  # Simulating search time
+    
+    progress_bar.progress(50)
+    status_text.text("Processing results...")
+    time.sleep(1)  # Simulating processing time
+    
+    progress_bar.progress(75)
+    status_text.text("Preparing response...")
+    time.sleep(1)  # Simulating preparation time
+    
+    progress_bar.progress(100)
+    status_text.text("Search completed!")
+    
+    return docs
+
 def main():
     st.title("Conference Q&A System")
     
@@ -228,11 +251,7 @@ def main():
         - For each key session or topic:
           - Provide a detailed description of approximately 5 sentences.
           - Include specific examples, data points, or case studies mentioned in the session.
-          - Highlight any innovative ideas or technologies discussed.
-          - Connect the session content to broader industry trends or challenges.
-          - Explicitly relate the content to relevant research principles, such as 'Insightful Analysis and Insight Generation' or 'Sensitivity and Adaptability to Change'.
-        - Present relevant data or case studies
-        - Show 2~3 data, file sources for each key content
+          - Show 2~3 data, file sources for each key content
         - For each major point, explain how it embodies the 'Practical and Specific Approach' principle
 
        
@@ -324,31 +343,36 @@ def main():
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholder for progress messages
-            progress_placeholder = st.empty()
+            # Create placeholders for progress bar and status text
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            search_results = st.empty()
             
-            # Show "Searching..." message
-            with progress_placeholder.container():
-                with st.spinner("Searching..."):
-                    # Perform the search
-                    search_result = retriever.get_relevant_documents(question)
+            # Perform the search with visual feedback
+            docs = search_documents(retriever, question, progress_bar, status_text)
             
-            # Show "Thinking..." message
-            with progress_placeholder.container():
-                with st.spinner("Thinking..."):
-                    # Generate the response
-                    response = chain.invoke(question)
+            # Display search results
+            with search_results.container():
+                st.subheader("Relevant Documents Found:")
+                for i, doc in enumerate(docs, 1):
+                    with st.expander(f"Document {i}: {doc.metadata.get('source', 'Unknown source')[:50]}..."):
+                        st.write(doc.page_content[:200] + "...")  # Display first 200 characters
             
-            # Clear the progress messages
-            progress_placeholder.empty()
+            status_text.text("Generating response...")
+            
+            # Generate the response
+            response = chain.invoke(question)
+            answer = response['answer']
+            
+            # Clear progress indicators
+            progress_bar.empty()
+            status_text.empty()
             
             # Display the answer
-            answer = response['answer']
-            source_documents = response['docs'][:8]  # Get up to 8 documents
             st.markdown(answer)
             
             with st.expander("Reference Documents"):
-                for i, doc in enumerate(source_documents, 1):
+                for i, doc in enumerate(docs[:5], 1):
                     st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
     
             # Add Plex.tv link
