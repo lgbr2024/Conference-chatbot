@@ -25,7 +25,7 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
         self._namespace = namespace
 
     def similarity_search_with_score_by_vector(
-        self, embedding: List[float], k: int = 4, filter: Dict[str, Any] = None, namespace: str = None
+        self, embedding: List[float], k: int = 8, filter: Dict[str, Any] = None, namespace: str = None
     ) -> List[Tuple[Document, float]]:
         namespace = namespace or self._namespace
         results = self.index.query(
@@ -48,8 +48,8 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
         ]
 
     def max_marginal_relevance_search_by_vector(
-        self, embedding: List[float], k: int = 4, fetch_k: int = 20,
-        lambda_mult: float = 0.5, filter: Dict[str, Any] = None, namespace: str = None
+        self, embedding: List[float], k: int = 8, fetch_k: int = 30,
+        lambda_mult: float = 0.7, filter: Dict[str, Any] = None, namespace: str = None
     ) -> List[Document]:
         namespace = namespace or self._namespace
         results = self.index.query(
@@ -122,7 +122,7 @@ def main():
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
-    llm = ChatOpenAI(model=st.session_state.gpt_model)
+    llm = ChatOpenAI(model=st.session_state.gpt_model, max_tokens=4096)
     
     # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
@@ -134,7 +134,7 @@ def main():
     # Set up retriever
     retriever = vectorstore.as_retriever(
         search_type='mmr',
-        search_kwargs={"k": 5, "fetch_k": 10, "lambda_mult": 0.75}
+        search_kwargs={"k": 10, "fetch_k": 20, "lambda_mult": 0.7}
     )
     
     # Set up prompt template and chain
@@ -214,7 +214,7 @@ def main():
   
   <task>
     <description>
-      Describe about 12,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
+      Describe about 15,000+ words for covering industrial changes, issues, and response strategies related to the conference. Reflects the [research principles]
     </description>
     
     <format>
@@ -331,7 +331,7 @@ def main():
             
             # Display the answer
             answer = response['answer']
-            source_documents = response['docs'][:5]  # Get up to 5 documents
+            source_documents = response['docs'][:8]  # Get up to 8 documents
             st.markdown(answer)
             
             with st.expander("Reference Documents"):
