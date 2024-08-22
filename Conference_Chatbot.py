@@ -315,7 +315,7 @@ def main():
   </team>
     </prompt>
     """
-prompt = ChatPromptTemplate.from_template(template)
+    prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs: List[Document]) -> str:
         formatted = []
