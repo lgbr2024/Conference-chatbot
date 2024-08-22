@@ -1,20 +1,3 @@
-import streamlit as st
-import os
-from dotenv import load_dotenv
-from operator import itemgetter
-from typing import List, Tuple, Dict, Any
-from pinecone import Pinecone
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough
-from langchain_pinecone import PineconeVectorStore
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-import time
-import threading
-
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
 
@@ -123,10 +106,15 @@ def animated_loading():
             time.sleep(0.1)
         i += 1
 
-def update_loading_animation(placeholder):
+def update_loading_animation(placeholder, progress_bar):
     loading_animation = animated_loading()
+    progress = 0
     while not placeholder.empty():
         placeholder.info(next(loading_animation))
+        progress += 0.5
+        if progress > 100:
+            progress = 0
+        progress_bar.progress(int(progress))
         time.sleep(0.1)
 
 def main():
@@ -171,13 +159,68 @@ def main():
     <context>
     <role>Strategic consultant for LG Group, tasked with uncovering new trends and insights based on various conference trends.</role>
     <audience>
-      <item>LG Group individual business executives</item>
-      <item>LG Group representative</item>
+      -LG Group individual business executives
+      -LG Group representative
     </audience>
     <knowledge_base>Conference file saved in vector database</knowledge_base>
     <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
-    <research-principles>
-      ... (research principles content)
+ <research-principles>
+      <principle>
+        <name>Insightful Analysis and Insight Generation</name>
+        <points>
+          <point>Emphasize deep analysis and meaningful insights beyond simple phenomenon observation.</point>
+          <point>Don't just see the dots, create lines.</point>
+          <point>While individual pieces have meaning, they should be viewed from a more evolved perspective.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Long-term Perspective and Proactive Response</name>
+        <points>
+          <point>Stress the importance of a long-term view, considering the 'plane' 5-10 years in the future, not just the present.</point>
+          <point>Emphasize the importance of proactive preparation and readiness before problems arise.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Sensitivity and Adaptability to Change</name>
+        <points>
+          <point>Highlight the need for awareness of rapidly changing environments and quick adaptation.</point>
+          <point>Encourage approaching issues with new perspectives, breaking away from existing preconceptions.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Value Creation and Inducing Practical Change</name>
+        <points>
+          <point>Stress moving beyond mere analysis or reporting to actually create value and drive change.</point>
+          <point>Mention the importance of inducing real change in clients or organizations.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Importance of Networking and Collaboration</name>
+        <points>
+          <point>Emphasize the importance of collaboration and network building between departments and with external entities.</point>
+          <point>Loose connections should always be within reach when needed.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Proactive Researcher Role</name>
+        <points>
+          <point>Stress the role of researchers in proactively identifying and solving problems without waiting for instructions.</point>
+          <point>Emphasize doing work that hasn't been assigned.</point>
+        </points>
+      </principle>
+
+      <principle>
+        <name>Practical and Specific Approach</name>
+        <points>
+          <point>Highlight the importance of developing concrete, applicable solutions rather than abstract discussions.</point>
+          <point>Mention the need to consider how to respond and what preparations to begin.</point>
+        </points>
+      </principle>
     </research-principles>
     </context>
   
@@ -221,12 +264,41 @@ def main():
     </constraints>
     </task>
   
-    <team>
-      ... (team information content)
-    </team>
+ <team>
+    <member>
+      <name>John</name>
+      <role>15-year consultant skilled in hypothesis-based thinking</role>
+      <expertise>Special ability in business planning and creating outlines</expertise>
+    </member>
+    <member>
+      <name>EJ</name>
+      <role>20-year electronics industry research expert</role>
+      <expertise>Special ability in finding new business cases and fact-based findings</expertise>
+    </member>
+    <member>
+      <name>JD</name>
+      <role>20-year business problem-solving expert</role>
+      <expertise>
+        <item>Advancing growth methods for electronics manufacturing companies</item>
+        <item>Future of customer changes and electronics business</item>
+        <item>Future AI development directions</item>
+        <item>Problem-solving and decision-making regarding the future of manufacturing</item>
+      </expertise>
+    </member>
+    <member>
+      <name>DS</name>
+      <role>25-year consultant leader, Ph.D. in Business Administration</role>
+      <expertise>Special ability to refine content for delivery to LG affiliate CEOs and LG Group representatives</expertise>
+    </member>
+    <member>
+      <name>YM</name>
+      <role>30-year Ph.D. in Economics and Business Administration</role>
+      <expertise>Overall leader overseeing the general quality of content</expertise>
+    </member>
+  </team>
     </prompt>
     """
-    prompt = ChatPromptTemplate.from_template(template)
+prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs: List[Document]) -> str:
         formatted = []
@@ -256,12 +328,13 @@ def main():
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for loading animation and final answer
+            # Create placeholders for loading animation, progress bar, and final answer
             loading_placeholder = st.empty()
+            progress_bar = st.progress(0)
             final_answer = st.empty()
             
-            # Start animated loading message
-            loading_thread = threading.Thread(target=update_loading_animation, args=(loading_placeholder,))
+            # Start animated loading message and progress bar
+            loading_thread = threading.Thread(target=update_loading_animation, args=(loading_placeholder, progress_bar))
             loading_thread.start()
             
             try:
@@ -269,8 +342,9 @@ def main():
                 response = chain.invoke(question)
                 answer = response['answer']
             finally:
-                # Stop the loading animation
+                # Stop the loading animation and progress bar
                 loading_placeholder.empty()
+                progress_bar.empty()
                 loading_thread.join()
             
             # Display the answer
