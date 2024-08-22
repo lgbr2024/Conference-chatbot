@@ -164,7 +164,7 @@ def main():
     </audience>
     <knowledge_base>Conference file saved in vector database</knowledge_base>
     <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
- <research-principles>
+    <research-principles>
       <principle>
         <name>Insightful Analysis and Insight Generation</name>
         <points>
