@@ -219,19 +219,19 @@ def main():
      </description>
     
     <format>
-     [Conference Overview] (about 4,000 words)
+     [Conference Overview] 
         - Explain the overall context of the conference related to the question
         - Introduce the main points or topics
                    
-     [Contents] (about 7,000 words)
+     [Contents] 
         - Analyze the key content discussed at the conference and reference.
         - For each key session or topic:
           - Provide a detailed description of approximately 5 sentences.
           - Include specific examples, data points, or case studies mentioned in the session.
           - Show 2~3 file sources for each key content
-        - For each major point, explain how it embodies the 'Practical and Specific Approach' principle
+
        
-      [Conclusion] (about 4,000 words)
+      [Conclusion] 
         - Summarize new trends based on the conference content
         - Present derived insights, emphasizing the 'Value Creation and Inducing Practical Change' principle
         - Suggest future strategic directions, incorporating the 'Proactive Researcher Role' principle
@@ -248,7 +248,7 @@ def main():
       <item>Answer in Korean and provide rich sentences to enhance the quality of the answer</item>
       <item>Adhere to the length constraints for each section</item>
       <item>Suggest appropriate data visualizations (e.g., charts, graphs) where relevant</item>
-      <item>[Conference Overview] (about 35% of the total answer) /  [Contents] (about 40% of the total answer) / [Conclusion] (about 25% of the total answer)</item>
+      <item>[Conference Overview] about 4,000 words /  [Contents] about 7,000 words / [Conclusion] about 4,000 words </item>
       <item>Explicitly mention and apply the research principles throughout the response</item>
     </constraints>
     </task>
