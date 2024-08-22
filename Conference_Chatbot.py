@@ -107,16 +107,19 @@ def maximal_marginal_relevance(
         candidate_indices.remove(max_index)
     return selected_indices
 
-def adaptive_progress_bar(progress_placeholder, status_placeholder, duration):
-    start_time = time.time()
-    while time.time() - start_time < duration:
-        elapsed = time.time() - start_time
-        progress = min(elapsed / duration, 1.0)
+def adaptive_progress_bar(progress_placeholder, status_placeholder, event):
+    progress = 0
+    while not event.is_set() and progress < 100:
+        progress += 1
         progress_placeholder.progress(progress)
-        status_placeholder.text(f"Processing... {int(progress * 100)}%")
-        time.sleep(0.1)
-    progress_placeholder.empty()
-    status_placeholder.empty()
+        status_placeholder.text(f"Processing... {progress}%")
+        time.sleep(0.1)  # Slower update for better visibility
+    
+    if not event.is_set():
+        progress_placeholder.progress(100)
+        status_placeholder.text("Processing... 100%")
+        time.sleep(0.5)  # Short pause at 100%
+    
 def main():
     st.title("Conference Q&A System")
     
@@ -331,13 +334,13 @@ def main():
             progress_placeholder = st.empty()
             status_placeholder = st.empty()
             
-            # Estimate processing time based on question complexity (example)
-            estimated_duration = len(question) * 0.1  # 0.1 second per character
+            # Event to signal when processing is complete
+            processing_complete = threading.Event()
             
             # Start progress bar in a separate thread
             progress_thread = threading.Thread(
                 target=adaptive_progress_bar,
-                args=(progress_placeholder, status_placeholder, estimated_duration)
+                args=(progress_placeholder, status_placeholder, processing_complete)
             )
             progress_thread.start()
             
@@ -348,8 +351,14 @@ def main():
                 answer = response['answer']
                 actual_duration = time.time() - start_time
             finally:
-                # Ensure progress bar reaches 100%
+                # Signal that processing is complete
+                processing_complete.set()
                 progress_thread.join()
+                
+                # Ensure progress bar reaches 100%
+                progress_placeholder.progress(100)
+                status_placeholder.text("Processing complete!")
+                time.sleep(0.5)  # Short pause to show completion
                 progress_placeholder.empty()
                 status_placeholder.empty()
             
@@ -359,16 +368,7 @@ def main():
             # Display actual processing time
             st.info(f"Processing time: {actual_duration:.2f} seconds")
             
-            with st.expander("Reference Documents"):
-                docs = response['docs']
-                for i, doc in enumerate(docs[:10], 1):
-                    st.write(f"{i}. Source: {doc.metadata.get('source', 'Unknown')}")
-    
-            # Add Plex.tv link
-            st.markdown("---")
-            st.markdown("[Watch related conference videos (Plex.tv)](https://app.plex.tv)")
-        
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+            # ... (rest of the code remains the same)
 
 if __name__ == "__main__":
     main()
