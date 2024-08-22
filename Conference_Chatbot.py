@@ -12,6 +12,7 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_pinecone import PineconeVectorStore
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import time
 
 os.environ["OPENAI_API_KEY"] = st.secrets["openai_api_key"]
 os.environ["PINECONE_API_KEY"] = st.secrets["pinecone_api_key"]
