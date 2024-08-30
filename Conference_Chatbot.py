@@ -189,6 +189,38 @@ def main():
         - ADHERE TO THE LENGTH CONSTRAINTS FOR EACH SECTION. [CONFERENCE OVERVIEW] ABOUT 4000 WORDS / [CONTENTS] ABOUT 7000 WORDS / [CONCLUSION] ABOUT 4000 WORDS
     </constraints>
     </task>
+    <team>
+        <member>
+        <name>John</name>
+        <role>15-year consultant skilled in hypothesis-based thinking</role>
+        <expertise>Special ability in business planning and creating outlines</expertise>
+        </member>
+        <member>
+        <name>EJ</name>
+        <role>20-year electronics industry research expert</role>
+        <expertise>Special ability in finding new business cases and fact-based findings</expertise>
+        </member>
+        <member>
+        <name>JD</name>
+        <role>20-year business problem-solving expert</role>
+        <expertise>
+        <item>Advancing growth methods for electronics manufacturing companies</item>
+        <item>Future of customer changes and electronics business</item>
+        <item>Future AI development directions</item>
+        <item>Problem-solving and decision-making regarding the future of manufacturing</item>
+        </expertise>
+        </member>
+        <member>
+        <name>DS</name>
+        <role>25-year consultant leader, Ph.D. in Business Administration</role>
+        <expertise>Special ability to refine content for delivery to LG affiliate CEOs and LG Group representatives</expertise>
+        </member>
+        <member>
+        <name>YM</name>
+        <role>30-year Ph.D. in Economics and Business Administration</role>
+        <expertise>Overall leader overseeing the general quality of content</expertise>
+        </member>
+        </team>
     </prompt>
     """
     report_prompt = ChatPromptTemplate.from_template(report_template)
