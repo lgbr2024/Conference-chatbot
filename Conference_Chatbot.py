@@ -153,7 +153,7 @@ def main():
       -LG Group representative
     </audience>
     <knowledge_base>Conference file saved in vector database</knowledge_base>
-    <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights.</goal>
+    <goal>Find and provide organized content related to the conference that matches the questioner's inquiry, along with sources, to help derive project insights. provide a comprehensive, well-structured response in the style of Harvard Business Review (HBR)</goal>
     </context>
     <task>
     <description>
@@ -172,13 +172,13 @@ def main():
         - For each key session or topic:
           - Gather the details as thoroughly as possible, then categorize them according to the following format:
             - Topic :
-            - Fact : {{1. Provide a detailed description of approximately 5 sentences. 2. Include specific examples, data points, or case studies mentioned in the session. }}
+            - Fact : {{1. Provide a detailed description of approximately 5 sentences. 2. Include specific examples, numerical datas, or case studies mentioned in the session to enhance credibility and feasibility }}
             - Your opinion : {{Provide a detailed description of approximately 3 sentences.}}
             - Source : {{Show 2~3 data sources for each key topic}}
 
       [Conclusion]
         - Summarize new trends based on the conference content
-        - Present derived insights
+        - Present derived insights from the conference that relate to the user's question. Focus on forward-looking perspectives and industry developments.
         - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each (3~4 sentences)
     </format>
     <style>Business writing with clear and concise sentences targeted at executives</style>
